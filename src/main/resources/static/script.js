@@ -1,6 +1,8 @@
-const PEOPLE_API = "/api/people";
-const TRANSACTION_API = "/api/transactions";
-const AUTH_API = "/api/auth";
+// ===== API Base URL (Render Backend) =====
+const BASE_URL = "https://track-transaction.onrender.com"; // ⬅️ Replace with your Render backend URL
+const PEOPLE_API = `${BASE_URL}/api/people`;
+const TRANSACTION_API = `${BASE_URL}/api/transactions`;
+const AUTH_API = `${BASE_URL}/api/auth`;
 
 let lastActivePerson = null; // to auto-expand after send/receive
 
@@ -32,7 +34,6 @@ async function authFetch(url, options = {}) {
     try {
         const res = await fetch(url, options);
         if (res.status === 401 || res.status === 403) {
-            console.warn("⚠️ Token rejected by backend. Clearing session.");
             showNotification("⚠️ Session expired. Please login again.", "error");
             sessionStorage.clear();
             setTimeout(() => (window.location.href = "login.html"), 1500);
@@ -110,9 +111,8 @@ async function loadPeople() {
 
         people.forEach(p => {
             const balance = p.balance ?? 0;
-            let balanceClass = "balance-zero";
-            if (balance > 0) balanceClass = "balance-positive";
-            else if (balance < 0) balanceClass = "balance-negative";
+            const balanceClass = balance > 0 ? "balance-positive" :
+                                 balance < 0 ? "balance-negative" : "balance-zero";
 
             const row = document.createElement("tr");
             row.innerHTML = `
@@ -161,7 +161,7 @@ async function sendMoney() {
         return showNotification("Select person and enter a valid amount", "error");
     }
 
-    lastActivePerson = name; // remember for auto-expand
+    lastActivePerson = name;
 
     try {
         const res = await authFetch(
@@ -189,7 +189,7 @@ async function receiveMoney() {
         return showNotification("Select person and enter a valid amount", "error");
     }
 
-    lastActivePerson = name; // remember for auto-expand
+    lastActivePerson = name;
 
     try {
         const res = await authFetch(
@@ -218,6 +218,21 @@ async function deletePerson(name) {
         loadPeople(); loadTransactions();
     } catch (err) {
         showNotification("Failed to delete person: " + err.message, "error");
+    }
+}
+
+// ===== REVERSE TRANSACTION =====
+async function reverseTransaction(id) {
+    if (!confirm("Are you sure you want to reverse this transaction?")) return;
+
+    try {
+        const res = await authFetch(`${TRANSACTION_API}/reverse/${id}`, { method: "POST" });
+        if (!res.ok) throw new Error(await res.text());
+
+        showNotification("🔄 Transaction reversed successfully!", "success");
+        loadPeople(); loadTransactions();
+    } catch (err) {
+        showNotification("Failed to reverse transaction: " + err.message, "error");
     }
 }
 
@@ -252,19 +267,20 @@ async function loadTransactions() {
         container.innerHTML = "";
 
         Object.keys(grouped).forEach(personName => {
+            const safeId = personName.replace(/\s+/g, "_");
             const personDiv = document.createElement("div");
             personDiv.className = "person-group";
 
             personDiv.innerHTML = `
-                <div class="person-header" onclick="toggleTransactions('${personName}')">
+                <div class="person-header" onclick="toggleTransactions('${safeId}')">
                     <h3>👤 ${personName}</h3>
                     <span class="toggle-indicator">+</span>
                 </div>
-                <div class="person-transactions" id="tx-${personName}" style="display:none;"></div>
+                <div class="person-transactions" id="tx-${safeId}" style="display:none;"></div>
             `;
             container.appendChild(personDiv);
 
-            const txContainer = personDiv.querySelector(`#tx-${personName}`);
+            const txContainer = personDiv.querySelector(`#tx-${safeId}`);
             grouped[personName].forEach(t => {
                 const txDiv = document.createElement("div");
                 txDiv.className = `transaction-item ${t.type.toLowerCase()}`;
@@ -272,6 +288,7 @@ async function loadTransactions() {
                     <div>
                         <b>${t.type === "SEND" ? "📤 Sent" : "📥 Received"}</b>
                         ₹${t.amount}
+                        <button class="reverse-btn" onclick="reverseTransaction(${t.id})">↩ Reverse</button>
                     </div>
                     <div>
                         <small>${t.description || "No description"} (${new Date(t.date).toLocaleDateString()})</small>
@@ -280,9 +297,8 @@ async function loadTransactions() {
                 txContainer.appendChild(txDiv);
             });
 
-            // auto-expand last active person
             if (lastActivePerson && lastActivePerson === personName) {
-                toggleTransactions(personName);
+                toggleTransactions(safeId);
             }
         });
 
@@ -295,8 +311,8 @@ async function loadTransactions() {
 }
 
 // ===== TOGGLE TRANSACTIONS =====
-function toggleTransactions(personName) {
-    const txDiv = document.getElementById(`tx-${personName}`);
+function toggleTransactions(safeId) {
+    const txDiv = document.getElementById(`tx-${safeId}`);
     const indicator = txDiv.parentElement.querySelector(".toggle-indicator");
     if (txDiv.style.display === "none") {
         txDiv.style.display = "block";
@@ -317,7 +333,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (document.body.classList.contains("dashboard")) {
         const token = getAuthToken();
         if (!token) {
-            console.warn("⚠️ No token found. Redirecting to login...");
             window.location.href = "login.html";
         } else {
             loadPeople();

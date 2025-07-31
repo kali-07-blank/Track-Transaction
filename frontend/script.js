@@ -221,6 +221,21 @@ async function deletePerson(name) {
     }
 }
 
+// ===== REVERSE TRANSACTION =====
+async function reverseTransaction(id) {
+    if (!confirm("Are you sure you want to reverse this transaction?")) return;
+
+    try {
+        const res = await authFetch(`${TRANSACTION_API}/${id}/reverse`, { method: "POST" });
+        if (!res.ok) throw new Error(await res.text());
+
+        showNotification("🔄 Transaction reversed successfully!", "success");
+        loadPeople(); loadTransactions();
+    } catch (err) {
+        showNotification("Failed to reverse transaction: " + err.message, "error");
+    }
+}
+
 // ===== LOAD TRANSACTIONS (Grouped) =====
 async function loadTransactions() {
     const container = document.getElementById("transactionsContainer");
@@ -251,7 +266,7 @@ async function loadTransactions() {
         container.innerHTML = "";
 
         Object.keys(grouped).forEach(personName => {
-            const safeId = personName.replace(/\s+/g, "_"); // handle spaces
+            const safeId = personName.replace(/\s+/g, "_");
             const personDiv = document.createElement("div");
             personDiv.className = "person-group";
 
@@ -272,6 +287,7 @@ async function loadTransactions() {
                     <div>
                         <b>${t.type === "SEND" ? "📤 Sent" : "📥 Received"}</b>
                         ₹${t.amount}
+                        <button class="delete-btn" onclick="reverseTransaction(${t.id})">🔄 Reverse</button>
                     </div>
                     <div>
                         <small>${t.description || "No description"} (${new Date(t.date).toLocaleDateString()})</small>

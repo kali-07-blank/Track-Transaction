@@ -40,6 +40,22 @@ public class TransactionController {
         return ResponseEntity.ok(transactionService.getTransactionsByPerson(userId, personName));
     }
 
+    // ===== NEW: Reverse Transaction =====
+    @DeleteMapping("/{transactionId}/reverse")
+    public ResponseEntity<String> reverseTransaction(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Long transactionId) {
+        Long userId = extractUserId(authHeader);
+        boolean success = transactionService.reverseTransaction(transactionId, userId);
+
+        if (success) {
+            return ResponseEntity.ok("✅ Transaction reversed successfully!");
+        } else {
+            return ResponseEntity.badRequest().body("❌ Failed to reverse transaction.");
+        }
+    }
+
+    // ===== Utility Method =====
     private Long extractUserId(String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             throw new RuntimeException("Invalid authorization header");
