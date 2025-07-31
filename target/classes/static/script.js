@@ -2,6 +2,8 @@ const PEOPLE_API = "/api/people";
 const TRANSACTION_API = "/api/transactions";
 const AUTH_API = "/api/auth";
 
+let lastActivePerson = null; // to auto-expand after send/receive
+
 // ===== Utility: Always get fresh token =====
 function getAuthToken() {
     return sessionStorage.getItem("authToken");
@@ -69,7 +71,6 @@ async function login(event) {
         sessionStorage.setItem("loggedIn", "true");
         sessionStorage.setItem("username", username);
 
-        console.log("✅ Login successful. Token stored:", token);
         showNotification("✅ Login successful! Redirecting...", "success");
 
         setTimeout(() => {
@@ -160,6 +161,8 @@ async function sendMoney() {
         return showNotification("Select person and enter a valid amount", "error");
     }
 
+    lastActivePerson = name; // remember for auto-expand
+
     try {
         const res = await authFetch(
             `${PEOPLE_API}/send?name=${encodeURIComponent(name)}&amount=${amount}&description=${encodeURIComponent(desc)}`,
@@ -185,6 +188,8 @@ async function receiveMoney() {
     if (!name || !amount || amount <= 0) {
         return showNotification("Select person and enter a valid amount", "error");
     }
+
+    lastActivePerson = name; // remember for auto-expand
 
     try {
         const res = await authFetch(
@@ -216,7 +221,7 @@ async function deletePerson(name) {
     }
 }
 
-// ===== LOAD TRANSACTIONS =====
+// ===== LOAD TRANSACTIONS (Grouped) =====
 async function loadTransactions() {
     const container = document.getElementById("transactionsContainer");
     container.innerHTML = "<p>Loading...</p>";
@@ -228,28 +233,57 @@ async function loadTransactions() {
         const transactions = await res.json();
         let totalSent = 0, totalReceived = 0;
 
-        container.innerHTML = "";
         if (!transactions.length) {
             container.innerHTML = "<p>No transactions yet</p>";
             return;
         }
 
+        // Group by person
+        const grouped = {};
         transactions.forEach(t => {
             if (t.type === "SEND") totalSent += t.amount;
             else totalReceived += t.amount;
 
-            const div = document.createElement("div");
-            div.className = `transaction-item ${t.type.toLowerCase()}`;
-            div.innerHTML = `
-                <div>
-                    <b>${t.type === "SEND" ? "📤 Sent" : "📥 Received"}</b>
-                    ₹${t.amount} - <span class="person">${t.person.name}</span>
+            const personName = t.person.name;
+            if (!grouped[personName]) grouped[personName] = [];
+            grouped[personName].push(t);
+        });
+
+        container.innerHTML = "";
+
+        Object.keys(grouped).forEach(personName => {
+            const personDiv = document.createElement("div");
+            personDiv.className = "person-group";
+
+            personDiv.innerHTML = `
+                <div class="person-header" onclick="toggleTransactions('${personName}')">
+                    <h3>👤 ${personName}</h3>
+                    <span class="toggle-indicator">+</span>
                 </div>
-                <div>
-                    <small>${t.description || 'No description'} (${new Date(t.date).toLocaleDateString()})</small>
-                </div>
+                <div class="person-transactions" id="tx-${personName}" style="display:none;"></div>
             `;
-            container.appendChild(div);
+            container.appendChild(personDiv);
+
+            const txContainer = personDiv.querySelector(`#tx-${personName}`);
+            grouped[personName].forEach(t => {
+                const txDiv = document.createElement("div");
+                txDiv.className = `transaction-item ${t.type.toLowerCase()}`;
+                txDiv.innerHTML = `
+                    <div>
+                        <b>${t.type === "SEND" ? "📤 Sent" : "📥 Received"}</b>
+                        ₹${t.amount}
+                    </div>
+                    <div>
+                        <small>${t.description || "No description"} (${new Date(t.date).toLocaleDateString()})</small>
+                    </div>
+                `;
+                txContainer.appendChild(txDiv);
+            });
+
+            // auto-expand last active person
+            if (lastActivePerson && lastActivePerson === personName) {
+                toggleTransactions(personName);
+            }
         });
 
         document.getElementById("totalSent").textContent = `₹${totalSent}`;
@@ -260,10 +294,24 @@ async function loadTransactions() {
     }
 }
 
+// ===== TOGGLE TRANSACTIONS =====
+function toggleTransactions(personName) {
+    const txDiv = document.getElementById(`tx-${personName}`);
+    const indicator = txDiv.parentElement.querySelector(".toggle-indicator");
+    if (txDiv.style.display === "none") {
+        txDiv.style.display = "block";
+        indicator.textContent = "−";
+    } else {
+        txDiv.style.display = "none";
+        indicator.textContent = "+";
+    }
+}
+
 // ===== INITIALIZATION =====
 document.addEventListener("DOMContentLoaded", () => {
-    if (document.getElementById("loginForm")) {
-        document.getElementById("loginForm").addEventListener("submit", login);
+    const loginForm = document.getElementById("loginForm");
+    if (loginForm) {
+        loginForm.addEventListener("submit", login);
     }
 
     if (document.body.classList.contains("dashboard")) {
@@ -272,7 +320,6 @@ document.addEventListener("DOMContentLoaded", () => {
             console.warn("⚠️ No token found. Redirecting to login...");
             window.location.href = "login.html";
         } else {
-            console.log("✅ Token found. Loading dashboard...");
             loadPeople();
             loadTransactions();
         }

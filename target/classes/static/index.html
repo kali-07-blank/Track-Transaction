@@ -9,7 +9,7 @@
 
 <header>
     <h1>💰 Money Tracker</h1>
-    <button onclick="logout()">🚪 Logout</button>
+    <button onclick="logout()" class="logout-btn">🚪 Logout</button>
 </header>
 
 <main>
@@ -83,7 +83,7 @@
             </div>
         </div>
 
-        <!-- Transaction List -->
+        <!-- Grouped Transaction List -->
         <div id="transactionsContainer" class="transactions-list">
             <p>Loading...</p>
         </div>
@@ -94,6 +94,22 @@
 <div id="notification" class="notification"></div>
 
 <script src="script.js"></script>
+<script>
+    // Optional: Accordion toggle animation
+    document.addEventListener("click", function(e) {
+        if (e.target.classList.contains("person-header")) {
+            const content = e.target.nextElementSibling;
+            const toggle = e.target.querySelector(".toggle-indicator");
+            if (content.style.display === "block") {
+                content.style.display = "none";
+                toggle.textContent = "+";
+            } else {
+                content.style.display = "block";
+                toggle.textContent = "-";
+            }
+        }
+    });
+</script>
 
 </body>
 </html>
