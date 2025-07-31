@@ -1,5 +1,5 @@
-// ===== API Base URL (Change this after backend is deployed) =====
-const BASE_URL = "http://localhost:8080";  // ⬅️ replace with your Render/other backend URL
+// ===== API Base URL (Render Backend) =====
+const BASE_URL = "https://track-transaction.onrender.com"; // ⬅️ your Render backend URL
 const PEOPLE_API = `${BASE_URL}/api/people`;
 const TRANSACTION_API = `${BASE_URL}/api/transactions`;
 const AUTH_API = `${BASE_URL}/api/auth`;
