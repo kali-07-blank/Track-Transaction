@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard | Money Tracker</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="dashboard">
+
+<header>
+    <h1>💰 Money Tracker</h1>
+    <button onclick="logout()" class="logout-btn">🚪 Logout</button>
+</header>
+
+<main>
+    <!-- Add Person -->
+    <section>
+        <h2>➕ Add Person</h2>
+        <div class="form-card">
+            <input type="text" id="personName" placeholder="Enter name">
+            <button class="add-btn" onclick="addPerson()">Add Person</button>
+        </div>
+    </section>
+
+    <!-- People List -->
+    <section>
+        <h2>👥 People</h2>
+        <div class="table-container">
+            <table>
+                <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Balance</th>
+                    <th>Action</th>
+                </tr>
+                </thead>
+                <tbody id="peopleList">
+                <tr><td colspan="3">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Send Money -->
+    <section>
+        <h2>📤 Send Money</h2>
+        <div class="transaction-form">
+            <select id="sendName"></select>
+            <input type="number" id="sendAmount" placeholder="Enter amount" min="1">
+            <input type="text" id="sendDesc" placeholder="Description (optional)">
+            <button class="send-btn" onclick="sendMoney()">Send</button>
+        </div>
+    </section>
+
+    <!-- Receive Money -->
+    <section>
+        <h2>📥 Receive Money</h2>
+        <div class="transaction-form">
+            <select id="receiveName"></select>
+            <input type="number" id="receiveAmount" placeholder="Enter amount" min="1">
+            <input type="text" id="receiveDesc" placeholder="Description (optional)">
+            <button class="receive-btn" onclick="receiveMoney()">Receive</button>
+        </div>
+    </section>
+
+    <!-- Transactions -->
+    <section class="transactions-section">
+        <h2>📑 Transactions</h2>
+
+        <!-- Summary Cards -->
+        <div class="summary-cards">
+            <div class="summary-card sent">
+                <h3>Total Sent</h3>
+                <p id="totalSent">₹0</p>
+            </div>
+            <div class="summary-card received">
+                <h3>Total Received</h3>
+                <p id="totalReceived">₹0</p>
+            </div>
+            <div class="summary-card balance">
+                <h3>Net Balance</h3>
+                <p id="netBalance">₹0</p>
+            </div>
+        </div>
+
+        <!-- Grouped Transaction List -->
+        <div id="transactionsContainer" class="transactions-list">
+            <p>Loading...</p>
+        </div>
+    </section>
+</main>
+
+<!-- Notification -->
+<div id="notification" class="notification"></div>
+
+<script src="script.js"></script>
+<script>
+    // Optional: Accordion toggle animation
+    document.addEventListener("click", function(e) {
+        if (e.target.classList.contains("person-header")) {
+            const content = e.target.nextElementSibling;
+            const toggle = e.target.querySelector(".toggle-indicator");
+            if (content.style.display === "block") {
+                content.style.display = "none";
+                toggle.textContent = "+";
+            } else {
+                content.style.display = "block";
+                toggle.textContent = "-";
+            }
+        }
+    });
+</script>
+
+</body>
+</html>
