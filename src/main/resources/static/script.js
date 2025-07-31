@@ -191,7 +191,7 @@ async function receiveMoney() {
             `${PEOPLE_API}/receive?name=${encodeURIComponent(name)}&amount=${amount}&description=${encodeURIComponent(desc)}`,
             { method: "POST" }
         );
-        if (!res.ok) throw new Error(await res.text());
+         if (!res.ok) throw new Error(await res.text());
 
         showNotification(`📥 Received ₹${amount} from ${name}`, "success");
         document.getElementById("receiveAmount").value = "";
