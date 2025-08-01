@@ -1,5 +1,3 @@
-package com.yourapp.config; // <-- change this to match your package structure
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
@@ -14,10 +12,10 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins("*") // allow all origins
-                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // allow common methods
-                        .allowedHeaders("*") // allow all headers
-                        .allowCredentials(false); // no cookies or Authorization headers
+                        .allowedOrigins("*")   // allow all origins
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                        .allowedHeaders("*")
+                        .allowCredentials(false); // important: disable credentials
             }
         };
     }
