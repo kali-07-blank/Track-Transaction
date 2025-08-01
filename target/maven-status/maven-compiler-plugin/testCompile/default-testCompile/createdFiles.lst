@@ -1,0 +1,3 @@
+com/moneytracker/PeopleApiSecurityTest.class
+com/moneytracker/service/JwtServiceTest.class
+com/moneytracker/config/JwtAuthFilterTest.class
