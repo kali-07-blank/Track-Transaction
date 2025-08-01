@@ -9,10 +9,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -21,6 +25,7 @@ import java.io.IOException;
 import java.util.Collections;
 
 @Configuration
+@EnableWebSecurity
 public class SecurityConfig {
 
     private final JwtService jwtService;
@@ -32,20 +37,22 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> {}) // Enable CORS (with CorsConfig)
-                .csrf(csrf -> csrf.disable()) // Disable CSRF for API
+                .cors(Customizer.withDefaults()) // Enable CORS
+                .csrf(csrf -> csrf.disable()) // Disable CSRF for stateless APIs
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Stateless (no sessions)
                 .authorizeHttpRequests(auth -> auth
-                        // Allow static files and login page
-                        .requestMatchers("/", "/login.html", "/index.html", "/style.css", "/script.js").permitAll()
-                        // Allow auth APIs without login
+                        // Public static resources
+                        .requestMatchers("/", "/index.html", "/login.html", "/style.css", "/script.js").permitAll()
+                        // Public API endpoints
                         .requestMatchers("/api/auth/**").permitAll()
-                        // Allow CORS preflight requests
+                        // Allow preflight requests
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        // Secure all other endpoints
+                        // Everything else requires authentication
                         .anyRequest().authenticated()
                 )
-                .formLogin(form -> form.disable())
-                .httpBasic(httpBasic -> httpBasic.disable());
+                .formLogin(form -> form.disable()) // Disable form login
+                .httpBasic(httpBasic -> httpBasic.disable()); // Disable basic auth
 
         // Add JWT filter before UsernamePasswordAuthenticationFilter
         http.addFilterBefore(new JwtAuthFilter(jwtService), UsernamePasswordAuthenticationFilter.class);
@@ -53,7 +60,15 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // Custom JWT Filter
+    // ✅ BCryptPasswordEncoder bean for password hashing
+    @Bean
+    public BCryptPasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    /**
+     * Custom JWT Filter to authenticate requests.
+     */
     public static class JwtAuthFilter extends OncePerRequestFilter {
 
         private final JwtService jwtService;
@@ -73,19 +88,27 @@ public class SecurityConfig {
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
                 String token = authHeader.substring(7);
 
-                if (jwtService.validateToken(token)) {
-                    Long userId = jwtService.getUserIdFromToken(token);
+                try {
+                    if (jwtService.validateToken(token)) {
+                        Long userId = jwtService.getUserIdFromToken(token);
 
-                    // Create a dummy UserDetails for Spring Security context
-                    UserDetails userDetails = User.withUsername("user-" + userId)
-                            .password("") // no password needed for JWT
-                            .authorities(Collections.emptyList())
-                            .build();
+                        UserDetails userDetails = User.withUsername("user-" + userId)
+                                .password("") // password not needed with JWT
+                                .authorities(Collections.emptyList())
+                                .build();
 
-                    UsernamePasswordAuthenticationToken authentication =
-                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                        UsernamePasswordAuthenticationToken authentication =
+                                new UsernamePasswordAuthenticationToken(
+                                        userDetails, null, userDetails.getAuthorities()
+                                );
 
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                    }
+                } catch (Exception e) {
+                    // Invalid token → clear context and return 401
+                    SecurityContextHolder.clearContext();
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    return;
                 }
             }
 

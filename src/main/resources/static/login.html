@@ -2,27 +2,44 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Money Tracker Login</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="login-page">
+
 <div class="login-container">
     <h1>💰 Money Tracker Login</h1>
-    <form id="loginForm">
+    <form id="loginForm" novalidate>
+        <!-- Username Field -->
         <div class="input-group">
-            <i>👤</i>
-            <input type="text" id="username" placeholder="Enter username" required>
+            <label for="username" class="sr-only">Username</label>
+            <i aria-hidden="true">👤</i>
+            <input type="text" id="username" name="username" placeholder="Enter username" required>
         </div>
+
+        <!-- Password Field -->
         <div class="input-group">
-            <i>🔒</i>
-            <input type="password" id="password" placeholder="Enter password" required>
+            <label for="password" class="sr-only">Password</label>
+            <i aria-hidden="true">🔒</i>
+            <input type="password" id="password" name="password" placeholder="Enter password" required>
         </div>
+
+        <!-- Submit Button -->
         <button type="submit">➡️ Login</button>
     </form>
 
+    <p style="margin-top: 15px; color: #fff;">
+        Don’t have an account?
+        <a href="register.html" style="color: #ffd700; text-decoration: underline;">Register here</a>
+    </p>
 </div>
 
-<div id="notification" class="notification"></div>
+<!-- Notification -->
+<div id="notification" class="notification" role="alert" aria-live="assertive"></div>
+
+<!-- JS -->
 <script src="script.js"></script>
+
 </body>
 </html>

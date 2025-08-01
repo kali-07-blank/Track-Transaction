@@ -6,25 +6,27 @@ import com.moneytracker.entity.User;
 import com.moneytracker.exception.DuplicateResourceException;
 import com.moneytracker.exception.ResourceNotFoundException;
 import com.moneytracker.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class AuthService {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final JwtService jwtService;
+    private final BCryptPasswordEncoder passwordEncoder;
 
-    @Autowired
-    private JwtService jwtService;
-
+    /**
+     * Login user and return JWT token
+     */
     public LoginResponse login(LoginRequest request) {
         User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new ResourceNotFoundException("Invalid credentials"));
+                .orElseThrow(() -> new ResourceNotFoundException("Invalid username or password"));
 
-        // For now we compare plain text (later you can add BCrypt encoder)
-        if (!user.getPassword().equals(request.getPassword())) {
-            throw new ResourceNotFoundException("Invalid credentials");
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new ResourceNotFoundException("Invalid username or password");
         }
 
         String token = jwtService.generateToken(user.getId(), user.getUsername());
@@ -32,6 +34,9 @@ public class AuthService {
         return new LoginResponse(token, user.getUsername(), "Login successful");
     }
 
+    /**
+     * Register a new user with hashed password
+     */
     public User registerUser(String username, String password) {
         if (userRepository.existsByUsername(username)) {
             throw new DuplicateResourceException("Username already exists");
@@ -39,7 +44,7 @@ public class AuthService {
 
         User user = new User();
         user.setUsername(username);
-        user.setPassword(password); // TODO: Hash password with BCrypt in production
+        user.setPassword(passwordEncoder.encode(password)); // ✅ Secure password
         return userRepository.save(user);
     }
 }

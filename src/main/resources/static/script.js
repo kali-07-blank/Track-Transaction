@@ -28,6 +28,12 @@ function showNotification(message, type = "success") {
     setTimeout(() => (notification.style.display = "none"), 3000);
 }
 
+// ===== Utility: Clear and reset a form =====
+function resetForm(formId) {
+    const form = document.getElementById(formId);
+    if (form) form.reset();
+}
+
 // ===== Authenticated Fetch =====
 async function authFetch(url, options = {}) {
     const token = getAuthToken();
@@ -70,19 +76,50 @@ async function login(event) {
 
         if (!res.ok) throw new Error(await res.text());
         const data = await res.json();
-        const token = data.token;
 
-        sessionStorage.setItem("authToken", token);
+        sessionStorage.setItem("authToken", data.token);
         sessionStorage.setItem("loggedIn", "true");
         sessionStorage.setItem("username", username);
 
         showNotification("✅ Login successful! Redirecting...", "success");
+        resetForm("loginForm");
 
         setTimeout(() => {
             window.location.href = "index.html";
         }, 1000);
     } catch (err) {
         showNotification("Login failed: " + err.message, "error");
+    }
+}
+
+// ===== REGISTER =====
+async function register(event) {
+    event.preventDefault();
+    const username = document.getElementById("regUsername").value.trim();
+    const password = document.getElementById("regPassword").value.trim();
+
+    if (!username || !password) {
+        return showNotification("Enter both username and password", "error");
+    }
+
+    try {
+        const res = await fetch(`${AUTH_API}/register`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password })
+        });
+
+        if (!res.ok) throw new Error(await res.text());
+        await res.text();
+
+        showNotification("✅ Registration successful! You can now log in.", "success");
+        resetForm("registerForm");
+
+        setTimeout(() => {
+            window.location.href = "login.html";
+        }, 1500);
+    } catch (err) {
+        showNotification("Registration failed: " + err.message, "error");
     }
 }
 
@@ -105,8 +142,8 @@ async function loadPeople() {
 
         const people = await res.json();
         table.innerHTML = "";
-        sendSelect.innerHTML = "<option>Select Person</option>";
-        receiveSelect.innerHTML = "<option>Select Person</option>";
+        sendSelect.innerHTML = "<option value=''>Select Person</option>";
+        receiveSelect.innerHTML = "<option value=''>Select Person</option>";
 
         if (!people.length) {
             table.innerHTML = "<tr><td colspan='3'>No people yet</td></tr>";
@@ -115,8 +152,9 @@ async function loadPeople() {
 
         people.forEach(p => {
             const balance = p.balance ?? 0;
-            const balanceClass = balance > 0 ? "balance-positive" :
-                                 balance < 0 ? "balance-negative" : "balance-zero";
+            const balanceClass =
+                balance > 0 ? "balance-positive" :
+                balance < 0 ? "balance-negative" : "balance-zero";
 
             const row = document.createElement("tr");
             row.innerHTML = `
@@ -148,7 +186,7 @@ async function addPerson() {
         if (!res.ok) throw new Error(await res.text());
 
         showNotification(`✅ Person "${name}" added successfully!`, "success");
-        document.getElementById("personName").value = "";
+        resetForm("personForm");
         loadPeople();
     } catch (err) {
         showNotification("Failed to add person: " + err.message, "error");
@@ -158,10 +196,10 @@ async function addPerson() {
 // ===== SEND MONEY =====
 async function sendMoney() {
     const name = document.getElementById("sendName").value;
-    const amount = document.getElementById("sendAmount").value;
-    const desc = document.getElementById("sendDesc").value;
+    const amount = parseFloat(document.getElementById("sendAmount").value);
+    const desc = document.getElementById("sendDesc").value.trim();
 
-    if (!name || !amount || amount <= 0) {
+    if (!name || isNaN(amount) || amount <= 0) {
         return showNotification("Select person and enter a valid amount", "error");
     }
 
@@ -175,9 +213,9 @@ async function sendMoney() {
         if (!res.ok) throw new Error(await res.text());
 
         showNotification(`📤 Sent ₹${amount} to ${name}`, "success");
-        document.getElementById("sendAmount").value = "";
-        document.getElementById("sendDesc").value = "";
-        loadPeople(); loadTransactions();
+        resetForm("sendForm");
+        loadPeople();
+        loadTransactions();
     } catch (err) {
         showNotification("Failed to send money: " + err.message, "error");
     }
@@ -186,10 +224,10 @@ async function sendMoney() {
 // ===== RECEIVE MONEY =====
 async function receiveMoney() {
     const name = document.getElementById("receiveName").value;
-    const amount = document.getElementById("receiveAmount").value;
-    const desc = document.getElementById("receiveDesc").value;
+    const amount = parseFloat(document.getElementById("receiveAmount").value);
+    const desc = document.getElementById("receiveDesc").value.trim();
 
-    if (!name || !amount || amount <= 0) {
+    if (!name || isNaN(amount) || amount <= 0) {
         return showNotification("Select person and enter a valid amount", "error");
     }
 
@@ -203,9 +241,9 @@ async function receiveMoney() {
         if (!res.ok) throw new Error(await res.text());
 
         showNotification(`📥 Received ₹${amount} from ${name}`, "success");
-        document.getElementById("receiveAmount").value = "";
-        document.getElementById("receiveDesc").value = "";
-        loadPeople(); loadTransactions();
+        resetForm("receiveForm");
+        loadPeople();
+        loadTransactions();
     } catch (err) {
         showNotification("Failed to receive money: " + err.message, "error");
     }
@@ -219,7 +257,8 @@ async function deletePerson(name) {
         if (!res.ok) throw new Error(await res.text());
 
         showNotification(`🗑️ Deleted ${name}`, "success");
-        loadPeople(); loadTransactions();
+        loadPeople();
+        loadTransactions();
     } catch (err) {
         showNotification("Failed to delete person: " + err.message, "error");
     }
@@ -234,7 +273,8 @@ async function reverseTransaction(id) {
         if (!res.ok) throw new Error(await res.text());
 
         showNotification("🔄 Transaction reversed successfully!", "success");
-        loadPeople(); loadTransactions();
+        loadPeople();
+        loadTransactions();
     } catch (err) {
         showNotification("Failed to reverse transaction: " + err.message, "error");
     }
@@ -243,7 +283,7 @@ async function reverseTransaction(id) {
 // ===== LOAD TRANSACTIONS (Grouped) =====
 async function loadTransactions() {
     const container = document.getElementById("transactionsContainer");
-    container.innerHTML = "<p>Loading...</p>";
+    container.innerHTML = "<p>Loading transactions...</p>";
 
     try {
         const res = await authFetch(`${TRANSACTION_API}/all`);
@@ -330,9 +370,10 @@ function toggleTransactions(safeId) {
 // ===== INITIALIZATION =====
 document.addEventListener("DOMContentLoaded", () => {
     const loginForm = document.getElementById("loginForm");
-    if (loginForm) {
-        loginForm.addEventListener("submit", login);
-    }
+    if (loginForm) loginForm.addEventListener("submit", login);
+
+    const regForm = document.getElementById("registerForm");
+    if (regForm) regForm.addEventListener("submit", register);
 
     if (document.body.classList.contains("dashboard")) {
         const token = getAuthToken();
