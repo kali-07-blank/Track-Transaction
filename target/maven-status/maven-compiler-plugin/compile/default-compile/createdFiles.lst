@@ -11,6 +11,7 @@ com/moneytracker/exception/DuplicateResourceException.class
 com/moneytracker/dto/TransactionSummary.class
 com/moneytracker/enums/TransactionType.class
 com/moneytracker/exception/ResourceNotFoundException.class
+com/moneytracker/config/WebConfig.class
 com/moneytracker/service/PersonService.class
 com/moneytracker/controller/PersonController.class
 com/moneytracker/repository/PersonRepository.class
@@ -22,4 +23,5 @@ com/moneytracker/config/SecurityConfig.class
 com/moneytracker/dto/LoginRequest.class
 com/moneytracker/config/SecurityConfig$JwtAuthFilter.class
 com/moneytracker/service/AuthService.class
+com/moneytracker/config/WebConfig$1.class
 com/moneytracker/service/TransactionService.class
