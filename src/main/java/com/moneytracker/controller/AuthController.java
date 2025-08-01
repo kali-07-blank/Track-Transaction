@@ -16,7 +16,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class AuthController {
 
@@ -29,7 +28,7 @@ public class AuthController {
             LoginResponse response = authService.login(request);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return ResponseEntity.status(401).body("Invalid username or password");
+            return ResponseEntity.status(401).body(Map.of("error", "Invalid username or password"));
         }
     }
 
@@ -37,17 +36,16 @@ public class AuthController {
     public ResponseEntity<?> register(@RequestBody LoginRequest request) {
         try {
             authService.registerUser(request.getUsername(), request.getPassword());
-            return ResponseEntity.ok("User registered successfully!");
+            return ResponseEntity.ok(Map.of("message", "User registered successfully!"));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Registration failed: " + e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", "Registration failed: " + e.getMessage()));
         }
     }
 
-    // ✅ New endpoint to get current logged-in user
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser(@AuthenticationPrincipal UserDetails userDetails) {
         if (userDetails == null) {
-            return ResponseEntity.status(401).body("Unauthorized");
+            return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
         }
 
         try {
@@ -62,7 +60,7 @@ public class AuthController {
             return ResponseEntity.ok(userInfo);
 
         } catch (Exception e) {
-            return ResponseEntity.status(401).body("Invalid token");
+            return ResponseEntity.status(401).body(Map.of("error", "Invalid token"));
         }
     }
 }

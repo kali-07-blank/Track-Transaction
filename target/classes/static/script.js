@@ -1,5 +1,5 @@
 // ===== API Base URL =====
-const isLocal = window.location.hostname === "localhost";
+const isLocal = ["localhost", "127.0.0.1"].includes(window.location.hostname);
 const BASE_URL = isLocal
     ? "http://localhost:8080"
     : "https://track-transaction.onrender.com";
@@ -37,9 +37,13 @@ function resetForm(formId) {
 // ===== Authenticated Fetch =====
 async function authFetch(url, options = {}) {
     const token = getAuthToken();
-    options.headers = options.headers || {};
-    options.headers["Content-Type"] = "application/json";
+    options.method = options.method || "GET";
+    options.headers = {
+        ...(options.headers || {}),
+        "Content-Type": "application/json"
+    };
     if (token) options.headers["Authorization"] = `Bearer ${token}`;
+    options.credentials = "include"; // ✅ required with allowCredentials(true)
 
     try {
         const res = await fetch(url, options);
@@ -71,12 +75,16 @@ async function login(event) {
         const res = await fetch(`${AUTH_API}/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username, password })
+            body: JSON.stringify({ username, password }),
+            credentials: "include"
         });
 
-        if (!res.ok) throw new Error(await res.text());
-        const data = await res.json();
+        if (!res.ok) {
+            const errorText = await res.text();
+            throw new Error(errorText || "Invalid login");
+        }
 
+        const data = await res.json();
         sessionStorage.setItem("authToken", data.token);
         sessionStorage.setItem("loggedIn", "true");
         sessionStorage.setItem("username", username);
@@ -84,9 +92,7 @@ async function login(event) {
         showNotification("✅ Login successful! Redirecting...", "success");
         resetForm("loginForm");
 
-        setTimeout(() => {
-            window.location.href = "index.html";
-        }, 1000);
+        setTimeout(() => (window.location.href = "index.html"), 1000);
     } catch (err) {
         showNotification("Login failed: " + err.message, "error");
     }
@@ -106,11 +112,14 @@ async function register(event) {
         const res = await fetch(`${AUTH_API}/register`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username, password })
+            body: JSON.stringify({ username, password }),
+            credentials: "include"
         });
 
-        if (!res.ok) throw new Error(await res.text());
-        await res.text();
+        if (!res.ok) {
+            const errorText = await res.text();
+            throw new Error(errorText || "Registration failed");
+        }
 
         showNotification("✅ Registration successful! You can now log in.", "success");
         resetForm("registerForm");
