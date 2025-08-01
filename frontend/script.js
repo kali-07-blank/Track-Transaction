@@ -1,5 +1,5 @@
-// ===== API Base URL (Render Backend) =====
-const BASE_URL = "https://track-transaction.onrender.com"; // ⬅️ your Render backend URL
+// ===== API Base URL (Your Backend Server) =====
+const BASE_URL = "http://106.219.123.119:8080"; // <-- using your server IP
 const PEOPLE_API = `${BASE_URL}/api/people`;
 const TRANSACTION_API = `${BASE_URL}/api/transactions`;
 const AUTH_API = `${BASE_URL}/api/auth`;
