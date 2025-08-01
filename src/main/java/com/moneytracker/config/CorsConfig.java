@@ -16,11 +16,13 @@ public class CorsConfig {
                 registry.addMapping("/**")
                         .allowedOrigins(
                                 "http://localhost:8080",
-                                "https://cheerful-tiramisu-44b0ee.netlify.app"
+                                "https://cheerful-tiramisu-44b0ee.netlify.app",
+                                "https://track-transaction.onrender.com"
                         )
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
-                        .allowCredentials(true);
+                        .allowCredentials(true)
+                        .maxAge(3600); // cache preflight response for 1 hour
             }
         };
     }

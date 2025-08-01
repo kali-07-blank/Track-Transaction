@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -31,11 +32,16 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> {}) // Enable CORS with CorsConfig
-                .csrf(csrf -> csrf.disable())
+                .cors(cors -> {}) // Enable CORS (with CorsConfig)
+                .csrf(csrf -> csrf.disable()) // Disable CSRF for API
                 .authorizeHttpRequests(auth -> auth
+                        // Allow static files and login page
                         .requestMatchers("/", "/login.html", "/index.html", "/style.css", "/script.js").permitAll()
+                        // Allow auth APIs without login
                         .requestMatchers("/api/auth/**").permitAll()
+                        // Allow CORS preflight requests
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        // Secure all other endpoints
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form.disable())
