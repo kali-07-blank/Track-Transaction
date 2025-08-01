@@ -278,7 +278,7 @@ async function reverseTransaction(id) {
     if (!confirm("Are you sure you want to reverse this transaction?")) return;
 
     try {
-        const res = await authFetch(`${TRANSACTION_API}/reverse/${id}`, { method: "POST" });
+        const res = await authFetch(`${TRANSACTION_API}/${id}/reverse`, { method: "DELETE" });
         if (!res.ok) throw new Error(await res.text());
 
         showNotification("🔄 Transaction reversed successfully!", "success");
@@ -306,7 +306,7 @@ async function loadTransactions() {
             return;
         }
 
-        // Group by person (supports nested or flat)
+        // Group by person
         const grouped = {};
         transactions.forEach(t => {
             if (t.type?.toUpperCase() === "SEND") totalSent += t.amount;

@@ -7,6 +7,7 @@ import com.moneytracker.service.TransactionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
@@ -40,15 +41,15 @@ public class TransactionController {
         return ResponseEntity.ok(transactionService.getTransactionsByPerson(userId, personName));
     }
 
-    // ===== NEW: Reverse Transaction =====
-    @DeleteMapping("/{transactionId}/reverse")
+    // ===== Reverse Transaction =====
+    @PostMapping("/reverse/{transactionId}")
     public ResponseEntity<String> reverseTransaction(
             @RequestHeader("Authorization") String authHeader,
             @PathVariable Long transactionId) {
         Long userId = extractUserId(authHeader);
 
         try {
-            transactionService.reverseTransaction(transactionId, userId); // void method
+            transactionService.reverseTransaction(userId, transactionId); // ✅ correct parameter order
             return ResponseEntity.ok("✅ Transaction reversed successfully!");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("❌ Failed to reverse transaction: " + e.getMessage());

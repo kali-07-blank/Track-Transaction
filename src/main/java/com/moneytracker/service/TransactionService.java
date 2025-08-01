@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -52,13 +51,8 @@ public class TransactionService {
     }
 
     public void reverseTransaction(Long userId, Long transactionId) {
-        Optional<Transaction> optTx = transactionRepository.findById(transactionId);
-
-        if (optTx.isEmpty()) {
-            throw new RuntimeException("Transaction not found");
-        }
-
-        Transaction original = optTx.get();
+        Transaction original = transactionRepository.findById(transactionId)
+                .orElseThrow(() -> new RuntimeException("Transaction not found"));
 
         if (!original.getUser().getId().equals(userId)) {
             throw new RuntimeException("You are not authorized to reverse this transaction");
@@ -67,7 +61,7 @@ public class TransactionService {
         Person person = original.getPerson();
         double amount = original.getAmount();
 
-        // Create opposite type transaction
+        // Create opposite transaction
         TransactionType reversedType =
                 original.getType() == TransactionType.SEND ? TransactionType.RECEIVE : TransactionType.SEND;
 
@@ -79,15 +73,21 @@ public class TransactionService {
         reversed.setType(reversedType);
         reversed.setTransactionDate(LocalDateTime.now());
 
-        // Adjust balance
-        if (reversedType == TransactionType.SEND) {
+        // ✅ Correct balance adjustment (undo the original)
+        if (original.getType() == TransactionType.SEND) {
+            // Undo a SEND → give amount back
             person.setBalance(person.getBalance() + amount);
         } else {
+            // Undo a RECEIVE → remove amount
             person.setBalance(person.getBalance() - amount);
         }
 
         transactionRepository.save(reversed);
         personRepository.save(person);
+
+        // Optional: mark original as reversed (so it can't be reversed again)
+        original.setDescription(original.getDescription() + " (REVERSED)");
+        transactionRepository.save(original);
     }
 
     private TransactionDTO convertToDTO(Transaction transaction) {

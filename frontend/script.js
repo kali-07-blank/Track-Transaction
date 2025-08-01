@@ -227,15 +227,17 @@ async function reverseTransaction(id) {
     if (!confirm("Are you sure you want to reverse this transaction?")) return;
 
     try {
-        const res = await authFetch(`${TRANSACTION_API}/${id}/reverse`, { method: "POST" });
+        const res = await authFetch(`${TRANSACTION_API}/${id}/reverse`, { method: "DELETE" });
         if (!res.ok) throw new Error(await res.text());
 
         showNotification("🔄 Transaction reversed successfully!", "success");
-        loadPeople(); loadTransactions();
+        loadPeople();
+        loadTransactions();
     } catch (err) {
         showNotification("Failed to reverse transaction: " + err.message, "error");
     }
 }
+
 
 // ===== LOAD TRANSACTIONS (Grouped) =====
 async function loadTransactions() {
