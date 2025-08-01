@@ -3,66 +3,81 @@ package com.moneytracker.controller;
 import com.moneytracker.dto.PersonDTO;
 import com.moneytracker.service.JwtService;
 import com.moneytracker.service.PersonService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/people")
-@CrossOrigin(origins = "*")
+@RequiredArgsConstructor
 public class PersonController {
 
-    @Autowired
-    private PersonService personService;
-
-    @Autowired
-    private JwtService jwtService;
+    private final PersonService personService;
+    private final JwtService jwtService;
 
     @GetMapping("/all")
-    public ResponseEntity<List<PersonDTO>> getAllPeople(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<List<PersonDTO>> getAllPeople(
+            @RequestHeader("Authorization") String authHeader) {
         Long userId = extractUserId(authHeader);
         return ResponseEntity.ok(personService.getAllPeople(userId));
     }
 
     @PostMapping("/add")
-    public ResponseEntity<String> addPerson(
+    public ResponseEntity<?> addPerson(
             @RequestHeader("Authorization") String authHeader,
-            @RequestParam String name) {
+            @RequestParam(name = "name", required = false) String name) {
         Long userId = extractUserId(authHeader);
-        personService.addPerson(userId, name);
-        return ResponseEntity.ok("Person '" + name + "' added successfully!");
+        if (name == null || name.trim().isEmpty()) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Name parameter is required"));
+        }
+        personService.addPerson(userId, name.trim());
+        return ResponseEntity.ok(Map.of("message", "Person '" + name + "' added successfully!"));
     }
 
     @DeleteMapping("/{name}")
-    public ResponseEntity<String> deletePerson(
+    public ResponseEntity<?> deletePerson(
             @RequestHeader("Authorization") String authHeader,
             @PathVariable String name) {
         Long userId = extractUserId(authHeader);
-        personService.deletePerson(userId, name);
-        return ResponseEntity.ok("Person '" + name + "' deleted successfully!");
+        if (name == null || name.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Name is required"));
+        }
+        personService.deletePerson(userId, name.trim());
+        return ResponseEntity.ok(Map.of("message", "Person '" + name + "' deleted successfully!"));
     }
 
     @PostMapping("/send")
-    public ResponseEntity<String> sendMoney(
+    public ResponseEntity<?> sendMoney(
             @RequestHeader("Authorization") String authHeader,
-            @RequestParam String name,
-            @RequestParam Double amount,
+            @RequestParam(name = "name", required = false) String name,
+            @RequestParam(name = "amount", required = false) Double amount,
             @RequestParam(required = false) String description) {
         Long userId = extractUserId(authHeader);
-        personService.sendMoney(userId, name, amount, description);
-        return ResponseEntity.ok("Money sent successfully!");
+        if (name == null || name.trim().isEmpty() || amount == null || amount <= 0) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Valid name and amount are required"));
+        }
+        personService.sendMoney(userId, name.trim(), amount, description);
+        return ResponseEntity.ok(Map.of("message", "Money sent successfully!"));
     }
 
     @PostMapping("/receive")
-    public ResponseEntity<String> receiveMoney(
+    public ResponseEntity<?> receiveMoney(
             @RequestHeader("Authorization") String authHeader,
-            @RequestParam String name,
-            @RequestParam Double amount,
+            @RequestParam(name = "name", required = false) String name,
+            @RequestParam(name = "amount", required = false) Double amount,
             @RequestParam(required = false) String description) {
         Long userId = extractUserId(authHeader);
-        personService.receiveMoney(userId, name, amount, description);
-        return ResponseEntity.ok("Money received successfully!");
+        if (name == null || name.trim().isEmpty() || amount == null || amount <= 0) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Valid name and amount are required"));
+        }
+        personService.receiveMoney(userId, name.trim(), amount, description);
+        return ResponseEntity.ok(Map.of("message", "Money received successfully!"));
     }
 
     private Long extractUserId(String authHeader) {

@@ -45,7 +45,7 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(csrf -> csrf.disable())
+                .csrf(cs -> cs.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/index.html", "/login.html", "/register.html",
@@ -55,14 +55,13 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form.disable())
-                .httpBasic(httpBasic -> httpBasic.disable());
+                .httpBasic(basic -> basic.disable());
 
         http.addFilterBefore(new JwtAuthFilter(jwtService), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    // ✅ Proper CORS configuration
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
@@ -81,19 +80,13 @@ public class SecurityConfig {
         return source;
     }
 
-    // Password encoder
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    /**
-     * JWT Filter for authenticating API requests.
-     */
     public static class JwtAuthFilter extends OncePerRequestFilter {
-
         private static final Logger logger = LoggerFactory.getLogger(JwtAuthFilter.class);
-
         private final JwtService jwtService;
 
         public JwtAuthFilter(JwtService jwtService) {
@@ -107,35 +100,29 @@ public class SecurityConfig {
                 throws ServletException, IOException {
 
             String authHeader = request.getHeader("Authorization");
-
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
                 String token = authHeader.substring(7);
-
                 try {
                     Long userId = jwtService.getUserIdFromToken(token);
                     if (userId != null && jwtService.validateToken(token)) {
                         UserDetails userDetails = User.withUsername("user-" + userId)
-                                .password("")
+                                .password("")  // no password needed
                                 .authorities(Collections.emptyList())
                                 .build();
-
-                        UsernamePasswordAuthenticationToken authentication =
-                                new UsernamePasswordAuthenticationToken(
-                                        userDetails, null, userDetails.getAuthorities());
-
-                        SecurityContextHolder.getContext().setAuthentication(authentication);
-                        logger.debug("✅ JWT authentication successful for user ID: {}", userId);
+                        UsernamePasswordAuthenticationToken auth =
+                                new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                        SecurityContextHolder.getContext().setAuthentication(auth);
+                        logger.debug("✅ JWT authenticated for user ID: {}", userId);
                     } else {
-                        logger.warn("❌ JWT validation failed");
+                        logger.warn("❌ JWT validation failed for token");
                     }
                 } catch (Exception e) {
-                    logger.error("❌ JWT authentication error: {}", e.getMessage());
+                    logger.error("❌ Error in JWT filter: {}", e.getMessage());
                     SecurityContextHolder.clearContext();
                     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     return;
                 }
             }
-
             filterChain.doFilter(request, response);
         }
     }
