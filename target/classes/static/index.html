@@ -93,23 +93,8 @@
 <!-- Notification -->
 <div id="notification" class="notification"></div>
 
+<!-- Only external JS -->
 <script src="script.js"></script>
-<script>
-    // Optional: Accordion toggle animation
-    document.addEventListener("click", function(e) {
-        if (e.target.classList.contains("person-header")) {
-            const content = e.target.nextElementSibling;
-            const toggle = e.target.querySelector(".toggle-indicator");
-            if (content.style.display === "block") {
-                content.style.display = "none";
-                toggle.textContent = "+";
-            } else {
-                content.style.display = "block";
-                toggle.textContent = "-";
-            }
-        }
-    });
-</script>
 
 </body>
 </html>

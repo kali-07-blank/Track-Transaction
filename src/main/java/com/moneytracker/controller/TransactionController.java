@@ -46,12 +46,12 @@ public class TransactionController {
             @RequestHeader("Authorization") String authHeader,
             @PathVariable Long transactionId) {
         Long userId = extractUserId(authHeader);
-        boolean success = transactionService.reverseTransaction(transactionId, userId);
 
-        if (success) {
+        try {
+            transactionService.reverseTransaction(transactionId, userId); // void method
             return ResponseEntity.ok("✅ Transaction reversed successfully!");
-        } else {
-            return ResponseEntity.badRequest().body("❌ Failed to reverse transaction.");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("❌ Failed to reverse transaction: " + e.getMessage());
         }
     }
 

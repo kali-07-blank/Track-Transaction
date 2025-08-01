@@ -44,7 +44,7 @@ body.login-page {
     gap: 8px;
 }
 
-/* Input Fields with floating labels */
+/* Input Fields */
 .login-container .input-group {
     position: relative;
     margin-bottom: 22px;
@@ -209,6 +209,20 @@ button:hover {
 .receive-btn {
     background: linear-gradient(135deg, #4caf50, #388e3c);
     color: white;
+}
+
+.reverse-btn {
+    background: linear-gradient(135deg, #ff9800, #f57c00);
+    color: white;
+    padding: 6px 12px;
+    font-size: 0.9rem;
+    border-radius: 6px;
+    margin-left: 10px;
+}
+
+.reverse-btn:hover {
+    background: linear-gradient(135deg, #ef6c00, #e65100);
+    transform: scale(1.08);
 }
 
 /* ===== People Table ===== */
