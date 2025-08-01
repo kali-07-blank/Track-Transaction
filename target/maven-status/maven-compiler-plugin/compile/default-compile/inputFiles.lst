@@ -4,7 +4,6 @@
 /home/gsharp/Music/money-manager/src/main/java/com/moneytracker/entity/User.java
 /home/gsharp/Music/money-manager/src/main/java/com/moneytracker/dto/LoginRequest.java
 /home/gsharp/Music/money-manager/src/main/java/com/moneytracker/entity/Transaction.java
-/home/gsharp/Music/money-manager/src/main/java/com/moneytracker/config/WebConfig.java
 /home/gsharp/Music/money-manager/src/main/java/com/moneytracker/repository/PersonRepository.java
 /home/gsharp/Music/money-manager/src/main/java/com/moneytracker/service/TransactionService.java
 /home/gsharp/Music/money-manager/src/main/java/com/moneytracker/service/AuthService.java
@@ -22,4 +21,5 @@
 /home/gsharp/Music/money-manager/src/main/java/com/moneytracker/service/JwtService.java
 /home/gsharp/Music/money-manager/src/main/java/com/moneytracker/controller/TransactionController.java
 /home/gsharp/Music/money-manager/src/main/java/com/moneytracker/MoneyTrackerApplication.java
+/home/gsharp/Music/money-manager/src/main/java/com/moneytracker/config/CorsConfig.java
 /home/gsharp/Music/money-manager/src/main/java/com/moneytracker/dto/TransactionSummary.java
