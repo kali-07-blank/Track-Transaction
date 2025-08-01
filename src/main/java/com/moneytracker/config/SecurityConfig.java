@@ -34,7 +34,6 @@ import java.util.Collections;
 public class SecurityConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
-
     private final JwtService jwtService;
 
     public SecurityConfig(JwtService jwtService) {
@@ -58,7 +57,6 @@ public class SecurityConfig {
                 .httpBasic(basic -> basic.disable());
 
         http.addFilterBefore(new JwtAuthFilter(jwtService), UsernamePasswordAuthenticationFilter.class);
-
         return http.build();
     }
 
@@ -69,10 +67,12 @@ public class SecurityConfig {
         config.setAllowedOriginPatterns(Arrays.asList(
                 "http://localhost:8080",
                 "http://127.0.0.1:8080",
+                "https://localhost:8080",  // optional HTTPS localhost
+                "https://cheerful-tiramisu-44b0ee.netlify.app",
                 "https://track-transaction.onrender.com"
         ));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));
+        config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "X-Requested-With", "Origin"));
         config.setExposedHeaders(Arrays.asList("Authorization"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -106,7 +106,7 @@ public class SecurityConfig {
                     Long userId = jwtService.getUserIdFromToken(token);
                     if (userId != null && jwtService.validateToken(token)) {
                         UserDetails userDetails = User.withUsername("user-" + userId)
-                                .password("")  // no password needed
+                                .password("")
                                 .authorities(Collections.emptyList())
                                 .build();
                         UsernamePasswordAuthenticationToken auth =

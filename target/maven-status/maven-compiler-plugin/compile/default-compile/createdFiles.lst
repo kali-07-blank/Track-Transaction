@@ -18,7 +18,6 @@ com/moneytracker/repository/PersonRepository.class
 com/moneytracker/MoneyTrackerApplication.class
 com/moneytracker/service/JwtService.class
 com/moneytracker/dto/LoginResponse.class
-com/moneytracker/config/CorsConfig$1.class
 com/moneytracker/dto/PersonDTO.class
 com/moneytracker/config/SecurityConfig.class
 com/moneytracker/dto/LoginRequest.class
