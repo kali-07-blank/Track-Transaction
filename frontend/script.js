@@ -1,8 +1,9 @@
-// ===== API Base URL (Your Backend Server) =====
-const BASE_URL = "http://106.219.123.119:8080"; // <-- using your server IP
-const PEOPLE_API = `${BASE_URL}/api/people`;
-const TRANSACTION_API = `${BASE_URL}/api/transactions`;
-const AUTH_API = `${BASE_URL}/api/auth`;
+// ===== API Base URL (via Netlify Proxy) =====
+// Netlify will redirect /api/* to your backend (see netlify.toml)
+const BASE_URL = "/api";
+const PEOPLE_API = `${BASE_URL}/people`;
+const TRANSACTION_API = `${BASE_URL}/transactions`;
+const AUTH_API = `${BASE_URL}/auth`;
 
 let lastActivePerson = null; // remember last active person for auto-expansion
 
