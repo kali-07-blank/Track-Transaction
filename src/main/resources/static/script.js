@@ -8,7 +8,7 @@ const PEOPLE_API = `${BASE_URL}/api/people`;
 const TRANSACTION_API = `${BASE_URL}/api/transactions`;
 const AUTH_API = `${BASE_URL}/api/auth`;
 
-let lastActivePerson = null; // to auto-expand after send/receive
+let lastActiveSafeId = null; // Track by safeId instead of person name
 
 // ===== Utility: Always get fresh token =====
 function getAuthToken() {
@@ -197,6 +197,7 @@ async function addPerson() {
 
         showNotification(`✅ Person "${name}" added successfully!`, "success");
         resetForm("personForm");
+        document.getElementById("personName").value = "";
         loadPeople();
     } catch (err) {
         showNotification("Failed to add person: " + err.message, "error");
@@ -213,7 +214,8 @@ async function sendMoney() {
         return showNotification("Select person and enter a valid amount", "error");
     }
 
-    lastActivePerson = name;
+    // Set last active person with safe ID
+    lastActiveSafeId = name.replace(/[^a-zA-Z0-9]/g, "_");
 
     try {
         const res = await authFetch(
@@ -223,9 +225,12 @@ async function sendMoney() {
         if (!res.ok) throw new Error(await res.text());
 
         showNotification(`📤 Sent ₹${amount} to ${name}`, "success");
-        resetForm("sendForm");
-        loadPeople();
-        loadTransactions();
+        document.getElementById("sendName").value = "";
+        document.getElementById("sendAmount").value = "";
+        document.getElementById("sendDesc").value = "";
+
+        await loadPeople();
+        await loadTransactions();
     } catch (err) {
         showNotification("Failed to send money: " + err.message, "error");
     }
@@ -241,7 +246,8 @@ async function receiveMoney() {
         return showNotification("Select person and enter a valid amount", "error");
     }
 
-    lastActivePerson = name;
+    // Set last active person with safe ID
+    lastActiveSafeId = name.replace(/[^a-zA-Z0-9]/g, "_");
 
     try {
         const res = await authFetch(
@@ -251,9 +257,12 @@ async function receiveMoney() {
         if (!res.ok) throw new Error(await res.text());
 
         showNotification(`📥 Received ₹${amount} from ${name}`, "success");
-        resetForm("receiveForm");
-        loadPeople();
-        loadTransactions();
+        document.getElementById("receiveName").value = "";
+        document.getElementById("receiveAmount").value = "";
+        document.getElementById("receiveDesc").value = "";
+
+        await loadPeople();
+        await loadTransactions();
     } catch (err) {
         showNotification("Failed to receive money: " + err.message, "error");
     }
@@ -282,71 +291,18 @@ async function reverseTransaction(id) {
         const res = await authFetch(`${TRANSACTION_API}/reverse/${id}`, { method: "POST" });
         if (!res.ok) throw new Error(await res.text());
 
-        const updated = await res.json();
-
         showNotification("🔄 Transaction reversed successfully!", "success");
 
-        // Update transaction item UI
-        const txBtn = document.querySelector(`.reverse-btn[onclick="reverseTransaction(${id})"]`);
-        if (txBtn) {
-            const txItem = txBtn.closest(".transaction-item");
-            txBtn.remove();
-            txItem.classList.add("reversed");
-            const label = document.createElement("span");
-            label.className = "reversed-label";
-            label.textContent = "(Reversed)";
-            txItem.querySelector("div b").after(label);
-
-            // Move reversed transaction to bottom
-            const txContainer = txItem.closest(".person-transactions");
-            if (txContainer) {
-                txContainer.appendChild(txItem);
-            }
-        }
-
-        // Update balance instantly in people table
-        if (updated?.person?.name && typeof updated?.person?.balance === "number") {
-            const row = document.querySelector(`#peopleList tr[data-person="${updated.person.name}"]`);
-            if (row) {
-                const balanceCell = row.querySelector(".balance-cell");
-                if (balanceCell) {
-                    const balance = updated.person.balance;
-                    const balanceClass =
-                        balance > 0 ? "balance-positive" :
-                        balance < 0 ? "balance-negative" : "balance-zero";
-                    balanceCell.innerHTML = `<span class="${balanceClass}">₹${balance}</span>`;
-                }
-            }
-        }
-
-        // Update totals instantly
-        if (updated?.transaction) {
-            const t = updated.transaction;
-            const totalSentEl = document.getElementById("totalSent");
-            const totalReceivedEl = document.getElementById("totalReceived");
-            const netBalanceEl = document.getElementById("netBalance");
-
-            let totalSent = parseFloat(totalSentEl.textContent.replace("₹", "")) || 0;
-            let totalReceived = parseFloat(totalReceivedEl.textContent.replace("₹", "")) || 0;
-
-            if (t.type?.toUpperCase() === "SEND") {
-                totalSent -= t.amount;
-            } else if (t.type?.toUpperCase() === "RECEIVE") {
-                totalReceived -= t.amount;
-            }
-
-            totalSentEl.textContent = `₹${totalSent}`;
-            totalReceivedEl.textContent = `₹${totalReceived}`;
-            netBalanceEl.textContent = `₹${totalReceived - totalSent}`;
-        }
+        // Reload both people and transactions
+        await loadPeople();
+        await loadTransactions();
 
     } catch (err) {
         showNotification("Failed to reverse transaction: " + err.message, "error");
     }
 }
-let lastActiveSafeId = null; // Track by safeId instead of person name
 
-// ===== LOAD TRANSACTIONS (Grouped & Collapsible) =====
+// ===== LOAD TRANSACTIONS (Grouped & Collapsible) - COMPLETELY FIXED =====
 async function loadTransactions() {
     const container = document.getElementById("transactionsContainer");
     container.innerHTML = "<p>Loading transactions...</p>";
@@ -357,6 +313,8 @@ async function loadTransactions() {
 
         const transactions = await res.json();
         let totalSent = 0, totalReceived = 0;
+
+        console.log("Loaded transactions:", transactions); // Debug log
 
         if (!transactions.length) {
             container.innerHTML = "<p>No transactions yet</p>";
@@ -379,52 +337,92 @@ async function loadTransactions() {
             grouped[personName].push(t);
         });
 
+        console.log("Grouped transactions:", grouped); // Debug log
+
         container.innerHTML = "";
 
         Object.keys(grouped).forEach(personName => {
-            const safeId = personName.replace(/\s+/g, "_");
+            const safeId = personName.replace(/[^a-zA-Z0-9]/g, "_");
+            console.log(`Creating group for ${personName} with safeId: ${safeId}`); // Debug log
+
             const personDiv = document.createElement("div");
             personDiv.className = "person-group";
 
-            personDiv.innerHTML = `
-                <div class="person-header" onclick="toggleTransactions('${safeId}')">
-                    <h3>👤 ${personName}</h3>
-                    <span class="toggle-indicator">+</span>
-                </div>
-                <div class="person-transactions" id="tx-${safeId}" style="display:none;"></div>
+            // Create the person header
+            const personHeader = document.createElement("div");
+            personHeader.className = "person-header";
+            personHeader.setAttribute("data-person", safeId);
+            personHeader.style.cursor = "pointer";
+            personHeader.innerHTML = `
+                <h3>👤 ${personName} (${grouped[personName].length} transactions)</h3>
+                <span class="toggle-indicator">+</span>
             `;
-            container.appendChild(personDiv);
 
-            const txContainer = personDiv.querySelector(`#tx-${safeId}`);
+            // Create the transactions container
+            const txContainer = document.createElement("div");
+            txContainer.className = "person-transactions";
+            txContainer.id = `tx-${safeId}`;
+            txContainer.style.display = "none";
+
+            // Add transactions to container
             grouped[personName]
-                .sort((a, b) => (a.reversed === b.reversed ? 0 : a.reversed ? 1 : -1))
+                .sort((a, b) => {
+                    // Sort by date descending, but put reversed transactions at bottom
+                    if (a.reversed !== b.reversed) {
+                        return a.reversed ? 1 : -1;
+                    }
+                    return new Date(b.date) - new Date(a.date);
+                })
                 .forEach(t => {
                     const isReversed = t.reversed === true;
                     const txDiv = document.createElement("div");
                     txDiv.className = `transaction-item ${t.type?.toLowerCase()} ${isReversed ? "reversed" : ""}`;
+
+                    const typeIcon = t.type?.toUpperCase() === "SEND" ? "📤" : "📥";
+                    const typeText = t.type?.toUpperCase() === "SEND" ? "Sent" : "Received";
+
                     txDiv.innerHTML = `
-                        <div>
-                            <b>${t.type?.toUpperCase() === "SEND" ? "📤 Sent" : "📥 Received"}</b>
-                            ₹${t.amount}
-                            ${isReversed
-                                ? "<span class='reversed-label'>(Reversed)</span>"
-                                : `<button class="reverse-btn" onclick="reverseTransaction(${t.id}, '${safeId}')">↩ Reverse</button>`}
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <b>${typeIcon} ${typeText} ₹${t.amount}</b>
+                                ${isReversed ? "<span class='reversed-label'>(Reversed)</span>" : ""}
+                            </div>
+                            <div>
+                                ${!isReversed ? `<button class="reverse-btn" onclick="reverseTransaction(${t.id})">↩ Reverse</button>` : ""}
+                            </div>
                         </div>
                         <div>
-                            <small>${t.description || "No description"} (${new Date(t.date).toLocaleDateString()})</small>
+                            <small>${t.description || "No description"} • ${new Date(t.date).toLocaleDateString()} ${new Date(t.date).toLocaleTimeString()}</small>
                         </div>
                     `;
                     txContainer.appendChild(txDiv);
                 });
 
+            // Add click event listener to person header
+            personHeader.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log(`Clicked on person header for: ${personName} (${safeId})`); // Debug log
+                toggleTransactions(safeId);
+            });
+
+            // Assemble the person group
+            personDiv.appendChild(personHeader);
+            personDiv.appendChild(txContainer);
+            container.appendChild(personDiv);
+
+            // Auto-expand if this was the last active person
             if (lastActiveSafeId && lastActiveSafeId === safeId) {
-                toggleTransactions(safeId, true);
+                setTimeout(() => toggleTransactions(safeId, true), 100);
             }
         });
 
+        // Update totals
         document.getElementById("totalSent").textContent = `₹${totalSent}`;
         document.getElementById("totalReceived").textContent = `₹${totalReceived}`;
         document.getElementById("netBalance").textContent = `₹${totalReceived - totalSent}`;
+
+        console.log("Transaction loading completed"); // Debug log
     } catch (err) {
         console.error("Transaction load error:", err);
         showNotification("Failed to load transactions: " + err.message, "error");
@@ -432,31 +430,62 @@ async function loadTransactions() {
     }
 }
 
-// ===== TOGGLE TRANSACTIONS =====
+// ===== TOGGLE TRANSACTIONS - COMPLETELY FIXED =====
 function toggleTransactions(safeId, autoScroll = false) {
-    const txDiv = document.getElementById(`tx-${safeId}`);
-    const indicator = txDiv.parentElement.querySelector(".toggle-indicator");
-    if (txDiv.style.display === "none") {
-        // Close any other open transactions first
-        document.querySelectorAll(".person-transactions").forEach(el => el.style.display = "none");
-        document.querySelectorAll(".toggle-indicator").forEach(el => el.textContent = "+");
+    console.log(`toggleTransactions called with safeId: ${safeId}`); // Debug log
 
+    const txDiv = document.getElementById(`tx-${safeId}`);
+    const personHeader = document.querySelector(`[data-person="${safeId}"]`);
+    const indicator = personHeader?.querySelector(".toggle-indicator");
+
+    console.log("Found elements:", { txDiv: !!txDiv, personHeader: !!personHeader, indicator: !!indicator }); // Debug log
+
+    if (!txDiv) {
+        console.error(`Could not find transaction container with ID: tx-${safeId}`);
+        return;
+    }
+
+    if (!indicator) {
+        console.error(`Could not find indicator for person: ${safeId}`);
+        return;
+    }
+
+    const isCurrentlyHidden = txDiv.style.display === "none" || txDiv.style.display === "";
+
+    if (isCurrentlyHidden) {
+        // Close all other open transactions first
+        document.querySelectorAll(".person-transactions").forEach(el => {
+            if (el !== txDiv) {
+                el.style.display = "none";
+            }
+        });
+        document.querySelectorAll(".toggle-indicator").forEach(el => {
+            if (el !== indicator) {
+                el.textContent = "+";
+            }
+        });
+
+        // Open this one
         txDiv.style.display = "block";
         indicator.textContent = "−";
-        lastActiveSafeId = safeId; // save which one is open
+        lastActiveSafeId = safeId;
+
+        console.log(`Opened transactions for: ${safeId}`); // Debug log
 
         if (autoScroll) {
             setTimeout(() => {
-                txDiv.scrollIntoView({ behavior: "smooth", block: "start" });
+                personHeader.scrollIntoView({ behavior: "smooth", block: "start" });
             }, 200);
         }
     } else {
+        // Close this one
         txDiv.style.display = "none";
         indicator.textContent = "+";
         lastActiveSafeId = null;
+
+        console.log(`Closed transactions for: ${safeId}`); // Debug log
     }
 }
-
 
 // ===== INITIALIZATION =====
 document.addEventListener("DOMContentLoaded", () => {

@@ -138,6 +138,11 @@ body.register-page {
     border-radius: 8px;
     font-weight: bold;
     max-width: 650px;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 .notification.success { background: #d4edda; color: #155724; }
 .notification.error { background: #f8d7da; color: #721c24; }
@@ -164,6 +169,30 @@ header {
 header h1 {
     font-size: 1.7rem;
     font-weight: bold;
+}
+
+.header-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+/* Dark Mode Toggle Button */
+.dark-toggle {
+    background: linear-gradient(135deg, #6c757d, #495057);
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: transform 0.25s, background 0.35s;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+    font-size: 0.9rem;
+}
+.dark-toggle:hover {
+    transform: scale(1.05);
+    background: linear-gradient(135deg, #495057, #343a40);
 }
 
 /* Logout Button */
@@ -252,18 +281,6 @@ button:hover { transform: scale(1.05); }
 .add-btn { background: linear-gradient(135deg, #007bff, #0056b3); color: #fff; }
 .send-btn { background: linear-gradient(135deg, #f76c6c, #f44336); color: #fff; }
 .receive-btn { background: linear-gradient(135deg, #4caf50, #388e3c); color: #fff; }
-.reverse-btn {
-    background: linear-gradient(135deg, #ff9800, #f57c00);
-    color: white;
-    padding: 6px 12px;
-    font-size: 0.9rem;
-    border-radius: 6px;
-    margin-left: 10px;
-}
-.reverse-btn:hover {
-    background: linear-gradient(135deg, #ef6c00, #e65100);
-    transform: scale(1.08);
-}
 
 /* ===== People Table ===== */
 .table-container {
@@ -364,12 +381,22 @@ td:first-child::before {
 .summary-card.balance { background: linear-gradient(135deg, #2196f3, #1565c0); }
 
 .summary-card h3 { font-size: 1.2rem; margin-bottom: 8px; }
-.summary-card p { font-size: 1.4rem; }
+.summary-card p { font-size: 1.4rem; margin: 0; }
 
-/* ===== Transactions List (Accordion) ===== */
+/* ===== Transactions Section ===== */
+.transactions-section {
+    background: white;
+    padding: 24px;
+    margin: 18px auto;
+    border-radius: 14px;
+    max-width: 950px;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
+}
+
+/* ===== Transactions List (Accordion) - FIXED ===== */
 .transactions-list {
     margin-top: 20px;
-    max-height: 400px;
+    max-height: 500px;
     overflow-y: auto;
     padding-right: 10px;
 }
@@ -380,13 +407,17 @@ td:first-child::before {
 }
 .transactions-list::-webkit-scrollbar-thumb:hover { background: #888; }
 
+/* Person Group Styling */
 .person-group {
     margin-bottom: 15px;
     border: 1px solid #ddd;
     border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    background: white;
 }
+
+/* Person Header Styling */
 .person-header {
     background: linear-gradient(135deg, #2196f3, #1976d2);
     color: #fff;
@@ -395,50 +426,127 @@ td:first-child::before {
     justify-content: space-between;
     align-items: center;
     font-weight: bold;
-    cursor: pointer;
+    cursor: pointer !important;
     font-size: 1.1rem;
     transition: background 0.35s ease;
+    user-select: none;
 }
-.person-header:hover { background: linear-gradient(135deg, #1976d2, #0d47a1); }
+
+.person-header:hover {
+    background: linear-gradient(135deg, #1976d2, #0d47a1);
+}
+
+.person-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Toggle Indicator */
 .toggle-indicator {
     font-size: 1.4rem;
-    transition: transform 0.4s ease;
+    font-weight: bold;
+    transition: transform 0.3s ease;
+    min-width: 20px;
+    text-align: center;
 }
-.person-header.active .toggle-indicator {
-    transform: rotate(90deg);
-}
+
+/* Person Transactions Container */
 .person-transactions {
-    background: #f1faff;
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.5s ease, padding 0.4s ease;
-    padding: 0 16px;
+    background: #f8f9fa;
+    padding: 0;
+    transition: all 0.3s ease;
+    border-top: 1px solid #e9ecef;
 }
-.person-transactions.show {
-    max-height: 500px;
+
+.person-transactions[style*="block"] {
     padding: 16px;
 }
+
+/* Individual Transaction Item */
 .transaction-item {
     background: #fff;
     margin-bottom: 10px;
     padding: 14px;
-    border-radius: 10px;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.08);
-    border-left: 6px solid transparent;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    border-left: 4px solid transparent;
     transition: transform 0.25s ease, background 0.25s;
 }
-.transaction-item.send { border-color: #f44336; }
-.transaction-item.receive { border-color: #4caf50; }
-.transaction-item:hover {
-    transform: scale(1.03);
-    background: #f9fbfc;
+
+.transaction-item:last-child {
+    margin-bottom: 0;
 }
-.transaction-item b { font-size: 1rem; }
+
+.transaction-item.send {
+    border-left-color: #f44336;
+    background: #fff5f5;
+}
+
+.transaction-item.receive {
+    border-left-color: #4caf50;
+    background: #f5fff5;
+}
+
+.transaction-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Transaction Item Content */
+.transaction-item b {
+    font-size: 1rem;
+    display: inline-block;
+    margin-bottom: 4px;
+}
+
 .transaction-item small {
-    display: block;
-    margin-top: 6px;
     color: #6c757d;
     font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+/* Reverse Button Styling */
+.reverse-btn {
+    background: linear-gradient(135deg, #ff9800, #f57c00);
+    color: white;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    font-weight: bold;
+    margin-left: 8px;
+}
+
+.reverse-btn:hover {
+    background: linear-gradient(135deg, #ef6c00, #e65100);
+    transform: scale(1.05);
+}
+
+/* Reversed Transaction Styling */
+.transaction-item.reversed {
+    opacity: 0.6;
+    background: #f5f5f5 !important;
+    border-left-color: #999 !important;
+}
+
+.transaction-item.reversed b {
+    text-decoration: line-through;
+    color: #999;
+}
+
+.reversed-label {
+    color: #d32f2f;
+    font-size: 0.8rem;
+    font-weight: bold;
+    margin-left: 8px;
+    background: #ffebee;
+    padding: 2px 6px;
+    border-radius: 4px;
 }
 
 /* ===== Badge Labels ===== */
@@ -456,6 +564,55 @@ td:first-child::before {
 .badge.warning { background: linear-gradient(135deg, #ffc107, #ff9800); }
 .badge.danger { background: linear-gradient(135deg, #dc3545, #c82333); }
 
+/* ===== Utility Classes ===== */
+.visually-hidden {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
+.sr-only {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
+/* ===== Loading States ===== */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #007bff;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
 /* ===== Responsive Design ===== */
 @media (max-width: 768px) {
     body { padding: 10px; }
@@ -464,16 +621,46 @@ td:first-child::before {
         gap: 10px;
         text-align: center;
     }
+    .header-actions {
+        flex-direction: row;
+        justify-content: center;
+    }
     section { padding: 15px; margin: 12px auto; }
-    .form-card, .transaction-form { flex-direction: column; align-items: stretch; }
+    .form-card, .transaction-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
     .form-card input,
     .transaction-form input,
     .transaction-form select,
     button { width: 100%; }
-    .summary-cards { flex-direction: column; gap: 15px; }
+    .summary-cards {
+        flex-direction: column;
+        gap: 15px;
+    }
     .summary-card { min-width: 100%; }
     .transactions-list { max-height: unset; }
+    .person-header {
+        padding: 12px;
+        font-size: 1rem;
+    }
+    .person-header h3 {
+        font-size: 1rem;
+    }
+    .transaction-item {
+        padding: 12px;
+    }
+    .transaction-item b {
+        font-size: 0.9rem;
+    }
+    .reverse-btn {
+        padding: 4px 8px;
+        font-size: 0.8rem;
+        margin-left: 0;
+        margin-top: 8px;
+    }
 }
+
 @media (max-width: 480px) {
     header h1 { font-size: 1.3rem; }
     section h2 { font-size: 1.2rem; }
@@ -482,6 +669,13 @@ td:first-child::before {
         padding: 10px;
     }
     .transaction-item { font-size: 0.9rem; }
+    .notification {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        max-width: none;
+    }
 }
 
 /* ===== Dark Mode Styles ===== */
@@ -489,238 +683,158 @@ body.dark-mode {
     background: #121212;
     color: #e0e0e0;
 }
+
 body.dark-mode section {
     background: #1e1e1e;
     color: #e0e0e0;
     box-shadow: 0 6px 14px rgba(0,0,0,0.7);
 }
+
+body.dark-mode .transactions-section {
+    background: #1e1e1e;
+    color: #e0e0e0;
+}
+
 body.dark-mode header {
     background: linear-gradient(135deg, #222, #333);
     color: #f1f1f1;
 }
+
 body.dark-mode .logout-btn {
     background: linear-gradient(135deg, #ff6b6b, #e63946);
 }
+
+body.dark-mode .dark-toggle {
+    background: linear-gradient(135deg, #ffc107, #ff9800);
+    color: #000;
+}
+
 body.dark-mode table {
     background: #1e1e1e;
     color: #f1f1f1;
 }
+
 body.dark-mode thead {
     background: linear-gradient(135deg, #333, #444);
 }
+
 body.dark-mode tbody tr:hover {
     background: rgba(255,255,255,0.08);
 }
-body.dark-mode .transaction-item {
-    background: #2c2c2c;
-    color: #f1f1f1;
-}
-body.dark-mode .person-header {
-    background: linear-gradient(135deg, #333, #444);
-}
-body.dark-mode .person-transactions {
+
+body.dark-mode tbody tr:nth-child(even) {
     background: #252525;
 }
 
-
-
-/* === General Styles === */
-body {
-  font-family: Arial, sans-serif;
-  background: #f4f6f8;
-  margin: 0;
-  padding: 0;
-  color: #333;
+body.dark-mode .person-group {
+    background: #2c2c2c;
+    border-color: #444;
 }
 
-h3 {
-  margin: 0;
-  font-size: 1.2rem;
+body.dark-mode .person-header {
+    background: linear-gradient(135deg, #333, #444);
+    color: #f1f1f1;
 }
 
-/* === Table Styling === */
-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: white;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+body.dark-mode .person-header:hover {
+    background: linear-gradient(135deg, #444, #555);
 }
 
-th, td {
-  padding: 12px;
-  text-align: left;
-  border-bottom: 1px solid #eee;
+body.dark-mode .person-transactions {
+    background: #252525;
+    border-top-color: #444;
 }
 
-tr:hover {
-  background: #fafafa;
+body.dark-mode .transaction-item {
+    background: #333 !important;
+    color: #f1f1f1;
+    border-left-color: #666;
 }
 
-/* === Balance Styling === */
-.balance-positive {
-  color: green;
-  font-weight: bold;
-}
-.balance-negative {
-  color: red;
-  font-weight: bold;
-}
-.balance-zero {
-  color: #666;
+body.dark-mode .transaction-item.send {
+    background: #4a2c2c !important;
+    border-left-color: #f44336;
 }
 
-/* === Buttons === */
-button {
-  background: #007bff;
-  color: white;
-  padding: 8px 14px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: 0.2s;
+body.dark-mode .transaction-item.receive {
+    background: #2c4a2c !important;
+    border-left-color: #4caf50;
 }
 
-button:hover {
-  background: #0056b3;
+body.dark-mode .transaction-item.reversed {
+    background: #2a2a2a !important;
+    color: #999;
 }
 
-.delete-btn {
-  background: #dc3545;
-}
-.delete-btn:hover {
-  background: #b02a37;
+body.dark-mode .transaction-item small {
+    color: #ccc;
 }
 
-/* Reverse Button */
-.reverse-btn {
-  background: #ffc107;
-  color: black;
-  font-size: 0.85rem;
-  padding: 4px 8px;
-  border-radius: 4px;
-  margin-left: 8px;
-}
-.reverse-btn:hover {
-  background: #e0a800;
+body.dark-mode .form-card input,
+body.dark-mode .transaction-form input,
+body.dark-mode .transaction-form select {
+    background: #333;
+    color: #fff;
+    border-color: #555;
 }
 
-/* === Transactions Section === */
-.person-group {
-  background: white;
-  margin-bottom: 12px;
-  border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  overflow: hidden;
+body.dark-mode .form-card input:focus-visible,
+body.dark-mode .transaction-form input:focus-visible,
+body.dark-mode .transaction-form select:focus-visible {
+    border-color: #007bff;
+    background: #444;
 }
 
-.person-header {
-  padding: 12px;
-  background: #007bff;
-  color: white;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: pointer;
+body.dark-mode .notification.success {
+    background: #1f5132;
+    color: #d1e7dd;
 }
 
-.person-header h3 {
-  font-size: 1rem;
+body.dark-mode .notification.error {
+    background: #58151c;
+    color: #f8d7da;
 }
 
-.toggle-indicator {
-  font-size: 1.3rem;
-  font-weight: bold;
-}
+/* ===== Print Styles ===== */
+@media print {
+    header,
+    .header-actions,
+    .logout-btn,
+    .dark-toggle,
+    .reverse-btn,
+    .delete-btn,
+    .add-btn,
+    .send-btn,
+    .receive-btn,
+    .notification {
+        display: none !important;
+    }
 
-/* Transaction Items */
-.transaction-item {
-  padding: 10px 14px;
-  border-bottom: 1px solid #eee;
-  display: flex;
-  flex-direction: column;
-  font-size: 0.95rem;
-}
+    body {
+        background: white !important;
+        color: black !important;
+        padding: 0;
+    }
 
-.transaction-item small {
-  color: #666;
-}
+    section {
+        box-shadow: none;
+        border: 1px solid #ddd;
+        margin: 10px 0;
+        page-break-inside: avoid;
+    }
 
-.transaction-item.send {
-  background: #fff5f5;
-  border-left: 4px solid red;
-}
+    .person-header {
+        background: #f5f5f5 !important;
+        color: black !important;
+    }
 
-.transaction-item.receive {
-  background: #f5fff5;
-  border-left: 4px solid green;
-}
+    .person-transactions {
+        display: block !important;
+        background: white !important;
+    }
 
-/* Reversed Transactions */
-.transaction-item.reversed {
-  background: #f9f9f9;
-  color: #999;
-  font-style: italic;
-  text-decoration: line-through;
-  border-left: 4px solid gray;
-}
-
-.reversed-label {
-  color: #d9534f;
-  font-size: 0.8rem;
-  margin-left: 6px;
-}
-
-/* === Totals Bar === */
-#totals {
-  background: white;
-  padding: 12px;
-  margin-top: 16px;
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-  display: flex;
-  justify-content: space-around;
-  font-weight: bold;
-}
-
-#totals span {
-  min-width: 100px;
-  text-align: center;
-}
-
-/* === Notification Styling === */
-.notification {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  background: #28a745;
-  color: white;
-  padding: 12px 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  display: none;
-  z-index: 9999;
-  font-weight: bold;
-}
-
-.notification.error {
-  background: #dc3545;
-}
-
-.notification.success {
-  background: #28a745;
-}
-
-
-
-.transaction-item.reversed {
-    opacity: 0.6;
-    background-color: #f5f5f5;
-    text-decoration: line-through;
-}
-.reversed-label {
-    color: #888;
-    font-size: 0.9em;
-    margin-left: 6px;
+    .transaction-item {
+        border: 1px solid #ddd;
+        margin-bottom: 5px;
+    }
 }

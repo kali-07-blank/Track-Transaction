@@ -203,7 +203,7 @@ async function addPerson() {
     }
 }
 
-// ===== SEND MONEY =====
+// ===== UPDATED SEND/RECEIVE FUNCTIONS TO SET LAST ACTIVE PERSON =====
 async function sendMoney() {
     const name = document.getElementById("sendName").value;
     const amount = parseFloat(document.getElementById("sendAmount").value);
@@ -213,7 +213,8 @@ async function sendMoney() {
         return showNotification("Select person and enter a valid amount", "error");
     }
 
-    lastActivePerson = name;
+    // Set last active person with safe ID
+    lastActiveSafeId = name.replace(/[^a-zA-Z0-9]/g, "_");
 
     try {
         const res = await authFetch(
@@ -231,7 +232,6 @@ async function sendMoney() {
     }
 }
 
-// ===== RECEIVE MONEY =====
 async function receiveMoney() {
     const name = document.getElementById("receiveName").value;
     const amount = parseFloat(document.getElementById("receiveAmount").value);
@@ -241,7 +241,8 @@ async function receiveMoney() {
         return showNotification("Select person and enter a valid amount", "error");
     }
 
-    lastActivePerson = name;
+    // Set last active person with safe ID
+    lastActiveSafeId = name.replace(/[^a-zA-Z0-9]/g, "_");
 
     try {
         const res = await authFetch(
@@ -346,7 +347,7 @@ async function reverseTransaction(id) {
 }
 let lastActiveSafeId = null; // Track by safeId instead of person name
 
-// ===== LOAD TRANSACTIONS (Grouped & Collapsible) =====
+// ===== LOAD TRANSACTIONS (Grouped & Collapsible) - FIXED =====
 async function loadTransactions() {
     const container = document.getElementById("transactionsContainer");
     container.innerHTML = "<p>Loading transactions...</p>";
@@ -382,12 +383,12 @@ async function loadTransactions() {
         container.innerHTML = "";
 
         Object.keys(grouped).forEach(personName => {
-            const safeId = personName.replace(/\s+/g, "_");
+            const safeId = personName.replace(/[^a-zA-Z0-9]/g, "_"); // Better safe ID generation
             const personDiv = document.createElement("div");
             personDiv.className = "person-group";
 
             personDiv.innerHTML = `
-                <div class="person-header" onclick="toggleTransactions('${safeId}')">
+                <div class="person-header" data-person="${safeId}">
                     <h3>👤 ${personName}</h3>
                     <span class="toggle-indicator">+</span>
                 </div>
@@ -408,7 +409,7 @@ async function loadTransactions() {
                             ₹${t.amount}
                             ${isReversed
                                 ? "<span class='reversed-label'>(Reversed)</span>"
-                                : `<button class="reverse-btn" onclick="reverseTransaction(${t.id}, '${safeId}')">↩ Reverse</button>`}
+                                : `<button class="reverse-btn" onclick="reverseTransaction(${t.id})">↩ Reverse</button>`}
                         </div>
                         <div>
                             <small>${t.description || "No description"} (${new Date(t.date).toLocaleDateString()})</small>
@@ -417,11 +418,19 @@ async function loadTransactions() {
                     txContainer.appendChild(txDiv);
                 });
 
+            // Add click event listener to person header
+            const personHeader = personDiv.querySelector('.person-header');
+            personHeader.addEventListener('click', function() {
+                toggleTransactions(safeId);
+            });
+
+            // Auto-expand if this was the last active person
             if (lastActiveSafeId && lastActiveSafeId === safeId) {
                 toggleTransactions(safeId, true);
             }
         });
 
+        // Update totals
         document.getElementById("totalSent").textContent = `₹${totalSent}`;
         document.getElementById("totalReceived").textContent = `₹${totalReceived}`;
         document.getElementById("netBalance").textContent = `₹${totalReceived - totalSent}`;
@@ -432,18 +441,34 @@ async function loadTransactions() {
     }
 }
 
-// ===== TOGGLE TRANSACTIONS =====
+// ===== TOGGLE TRANSACTIONS - FIXED =====
 function toggleTransactions(safeId, autoScroll = false) {
     const txDiv = document.getElementById(`tx-${safeId}`);
-    const indicator = txDiv.parentElement.querySelector(".toggle-indicator");
-    if (txDiv.style.display === "none") {
-        // Close any other open transactions first
-        document.querySelectorAll(".person-transactions").forEach(el => el.style.display = "none");
-        document.querySelectorAll(".toggle-indicator").forEach(el => el.textContent = "+");
+    const personHeader = document.querySelector(`[data-person="${safeId}"]`);
+    const indicator = personHeader?.querySelector(".toggle-indicator");
 
+    if (!txDiv || !indicator) {
+        console.error(`Could not find transaction container or indicator for ${safeId}`);
+        return;
+    }
+
+    if (txDiv.style.display === "none" || txDiv.style.display === "") {
+        // Close any other open transactions first
+        document.querySelectorAll(".person-transactions").forEach(el => {
+            if (el !== txDiv) {
+                el.style.display = "none";
+            }
+        });
+        document.querySelectorAll(".toggle-indicator").forEach(el => {
+            if (el !== indicator) {
+                el.textContent = "+";
+            }
+        });
+
+        // Open this one
         txDiv.style.display = "block";
         indicator.textContent = "−";
-        lastActiveSafeId = safeId; // save which one is open
+        lastActiveSafeId = safeId;
 
         if (autoScroll) {
             setTimeout(() => {
@@ -451,11 +476,13 @@ function toggleTransactions(safeId, autoScroll = false) {
             }, 200);
         }
     } else {
+        // Close this one
         txDiv.style.display = "none";
         indicator.textContent = "+";
         lastActiveSafeId = null;
     }
 }
+
 
 
 // ===== INITIALIZATION =====
