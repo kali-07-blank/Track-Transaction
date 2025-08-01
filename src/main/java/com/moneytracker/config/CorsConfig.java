@@ -14,7 +14,10 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins("https://cheerful-tiramisu-44b0ee.netlify.app")
+                        .allowedOrigins(
+                                "http://localhost:8080",
+                                "https://cheerful-tiramisu-44b0ee.netlify.app"
+                        )
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
                         .allowCredentials(true);

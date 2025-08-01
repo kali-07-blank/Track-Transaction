@@ -31,6 +31,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+                .cors(cors -> {}) // Enable CORS with CorsConfig
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/login.html", "/index.html", "/style.css", "/script.js").permitAll()
@@ -56,7 +57,9 @@ public class SecurityConfig {
         }
 
         @Override
-        protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+        protected void doFilterInternal(HttpServletRequest request,
+                                        HttpServletResponse response,
+                                        FilterChain filterChain)
                 throws ServletException, IOException {
 
             String authHeader = request.getHeader("Authorization");
