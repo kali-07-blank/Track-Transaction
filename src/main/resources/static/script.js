@@ -10,6 +10,14 @@ const AUTH_API = `${BASE_URL}/api/auth`;
 
 let lastActiveSafeId = null; // Track by safeId instead of person name
 
+// ===== THEME INITIALIZATION (moved from index.html) =====
+// Apply saved theme instantly to avoid flicker
+(function() {
+    if(localStorage.getItem('theme') === 'dark'){
+        document.body.classList.add('dark-mode');
+    }
+})();
+
 // ===== Utility: Always get fresh token =====
 function getAuthToken() {
     return sessionStorage.getItem("authToken");
@@ -28,10 +36,25 @@ function showNotification(message, type = "success") {
     setTimeout(() => (notification.style.display = "none"), 3000);
 }
 
-// ===== Utility: Clear and reset a form =====
+// ===== Utility: Clear and reset a form with improved error handling =====
 function resetForm(formId) {
     const form = document.getElementById(formId);
-    if (form) form.reset();
+    if (form) {
+        form.reset();
+    } else {
+        console.warn(`Form with ID '${formId}' not found`);
+    }
+}
+
+// ===== Utility: Update transaction summary with error checking =====
+function updateTransactionSummary(totalSent, totalReceived) {
+    const sentElement = document.getElementById("totalSent");
+    const receivedElement = document.getElementById("totalReceived");
+    const balanceElement = document.getElementById("netBalance");
+
+    if (sentElement) sentElement.textContent = `₹${totalSent}`;
+    if (receivedElement) receivedElement.textContent = `₹${totalReceived}`;
+    if (balanceElement) balanceElement.textContent = `₹${totalReceived - totalSent}`;
 }
 
 // ===== Authenticated Fetch =====
@@ -64,8 +87,8 @@ async function authFetch(url, options = {}) {
 // ===== LOGIN =====
 async function login(event) {
     event.preventDefault();
-    const username = document.getElementById("username").value.trim();
-    const password = document.getElementById("password").value.trim();
+    const username = document.getElementById("username")?.value?.trim();
+    const password = document.getElementById("password")?.value?.trim();
 
     if (!username || !password) {
         return showNotification("Enter both username and password", "error");
@@ -101,8 +124,8 @@ async function login(event) {
 // ===== REGISTER =====
 async function register(event) {
     event.preventDefault();
-    const username = document.getElementById("regUsername").value.trim();
-    const password = document.getElementById("regPassword").value.trim();
+    const username = document.getElementById("regUsername")?.value?.trim();
+    const password = document.getElementById("regPassword")?.value?.trim();
 
     if (!username || !password) {
         return showNotification("Enter both username and password", "error");
@@ -145,14 +168,20 @@ async function loadPeople() {
     const sendSelect = document.getElementById("sendName");
     const receiveSelect = document.getElementById("receiveName");
 
+    if (!table) {
+        console.error("People table not found");
+        return;
+    }
+
     try {
         const res = await authFetch(`${PEOPLE_API}/all`);
         if (!res.ok) throw new Error(await res.text());
 
         const people = await res.json();
         table.innerHTML = "";
-        sendSelect.innerHTML = "<option value=''>Select Person</option>";
-        receiveSelect.innerHTML = "<option value=''>Select Person</option>";
+
+        if (sendSelect) sendSelect.innerHTML = "<option value=''>Select Person</option>";
+        if (receiveSelect) receiveSelect.innerHTML = "<option value=''>Select Person</option>";
 
         if (!people.length) {
             table.innerHTML = "<tr><td colspan='3'>No people yet</td></tr>";
@@ -175,20 +204,25 @@ async function loadPeople() {
             table.appendChild(row);
 
             [sendSelect, receiveSelect].forEach(sel => {
-                const opt = document.createElement("option");
-                opt.value = p.name;
-                opt.textContent = p.name;
-                sel.appendChild(opt);
+                if (sel) {
+                    const opt = document.createElement("option");
+                    opt.value = p.name;
+                    opt.textContent = p.name;
+                    sel.appendChild(opt);
+                }
             });
         });
     } catch (err) {
         showNotification("Failed to load people: " + err.message, "error");
+        if (table) table.innerHTML = "<tr><td colspan='3'>Error loading people</td></tr>";
     }
 }
 
 // ===== ADD PERSON =====
 async function addPerson() {
-    const name = document.getElementById("personName").value.trim();
+    const nameInput = document.getElementById("personName");
+    const name = nameInput?.value?.trim();
+
     if (!name) return showNotification("Enter a name", "error");
 
     try {
@@ -197,7 +231,7 @@ async function addPerson() {
 
         showNotification(`✅ Person "${name}" added successfully!`, "success");
         resetForm("personForm");
-        document.getElementById("personName").value = "";
+        if (nameInput) nameInput.value = "";
         loadPeople();
     } catch (err) {
         showNotification("Failed to add person: " + err.message, "error");
@@ -206,9 +240,13 @@ async function addPerson() {
 
 // ===== SEND MONEY =====
 async function sendMoney() {
-    const name = document.getElementById("sendName").value;
-    const amount = parseFloat(document.getElementById("sendAmount").value);
-    const desc = document.getElementById("sendDesc").value.trim();
+    const nameSelect = document.getElementById("sendName");
+    const amountInput = document.getElementById("sendAmount");
+    const descInput = document.getElementById("sendDesc");
+
+    const name = nameSelect?.value;
+    const amount = parseFloat(amountInput?.value || "0");
+    const desc = descInput?.value?.trim() || "";
 
     if (!name || isNaN(amount) || amount <= 0) {
         return showNotification("Select person and enter a valid amount", "error");
@@ -225,9 +263,7 @@ async function sendMoney() {
         if (!res.ok) throw new Error(await res.text());
 
         showNotification(`📤 Sent ₹${amount} to ${name}`, "success");
-        document.getElementById("sendName").value = "";
-        document.getElementById("sendAmount").value = "";
-        document.getElementById("sendDesc").value = "";
+        resetForm("sendForm");
 
         await loadPeople();
         await loadTransactions();
@@ -238,9 +274,13 @@ async function sendMoney() {
 
 // ===== RECEIVE MONEY =====
 async function receiveMoney() {
-    const name = document.getElementById("receiveName").value;
-    const amount = parseFloat(document.getElementById("receiveAmount").value);
-    const desc = document.getElementById("receiveDesc").value.trim();
+    const nameSelect = document.getElementById("receiveName");
+    const amountInput = document.getElementById("receiveAmount");
+    const descInput = document.getElementById("receiveDesc");
+
+    const name = nameSelect?.value;
+    const amount = parseFloat(amountInput?.value || "0");
+    const desc = descInput?.value?.trim() || "";
 
     if (!name || isNaN(amount) || amount <= 0) {
         return showNotification("Select person and enter a valid amount", "error");
@@ -257,9 +297,7 @@ async function receiveMoney() {
         if (!res.ok) throw new Error(await res.text());
 
         showNotification(`📥 Received ₹${amount} from ${name}`, "success");
-        document.getElementById("receiveName").value = "";
-        document.getElementById("receiveAmount").value = "";
-        document.getElementById("receiveDesc").value = "";
+        resetForm("receiveForm");
 
         await loadPeople();
         await loadTransactions();
@@ -270,7 +308,8 @@ async function receiveMoney() {
 
 // ===== DELETE PERSON =====
 async function deletePerson(name) {
-    if (!confirm(`Delete ${name}?`)) return;
+    if (!confirm(`Delete ${name}? This will also delete all their transactions.`)) return;
+
     try {
         const res = await authFetch(`${PEOPLE_API}/${encodeURIComponent(name)}`, { method: "DELETE" });
         if (!res.ok) throw new Error(await res.text());
@@ -302,9 +341,14 @@ async function reverseTransaction(id) {
     }
 }
 
-// ===== LOAD TRANSACTIONS (Grouped & Collapsible) - COMPLETELY FIXED =====
+// ===== LOAD TRANSACTIONS (Grouped & Collapsible) =====
 async function loadTransactions() {
     const container = document.getElementById("transactionsContainer");
+    if (!container) {
+        console.error("Transactions container not found");
+        return;
+    }
+
     container.innerHTML = "<p>Loading transactions...</p>";
 
     try {
@@ -318,13 +362,11 @@ async function loadTransactions() {
 
         if (!transactions.length) {
             container.innerHTML = "<p>No transactions yet</p>";
-            document.getElementById("totalSent").textContent = "₹0";
-            document.getElementById("totalReceived").textContent = "₹0";
-            document.getElementById("netBalance").textContent = "₹0";
+            updateTransactionSummary(0, 0);
             return;
         }
 
-        // Group by person
+        // Group by person with improved field access
         const grouped = {};
         transactions.forEach(t => {
             if (t.reversed !== true) {
@@ -332,7 +374,8 @@ async function loadTransactions() {
                 else if (t.type?.toUpperCase() === "RECEIVE") totalReceived += t.amount;
             }
 
-            const personName = t.person?.name || t.personName || "Unknown";
+            // Improved person name extraction
+            const personName = t.person?.name || t.personName || t.name || "Unknown";
             if (!grouped[personName]) grouped[personName] = [];
             grouped[personName].push(t);
         });
@@ -417,10 +460,8 @@ async function loadTransactions() {
             }
         });
 
-        // Update totals
-        document.getElementById("totalSent").textContent = `₹${totalSent}`;
-        document.getElementById("totalReceived").textContent = `₹${totalReceived}`;
-        document.getElementById("netBalance").textContent = `₹${totalReceived - totalSent}`;
+        // Update totals using the utility function
+        updateTransactionSummary(totalSent, totalReceived);
 
         console.log("Transaction loading completed"); // Debug log
     } catch (err) {
@@ -430,7 +471,7 @@ async function loadTransactions() {
     }
 }
 
-// ===== TOGGLE TRANSACTIONS - COMPLETELY FIXED =====
+// ===== TOGGLE TRANSACTIONS =====
 function toggleTransactions(safeId, autoScroll = false) {
     console.log(`toggleTransactions called with safeId: ${safeId}`); // Debug log
 
@@ -487,14 +528,27 @@ function toggleTransactions(safeId, autoScroll = false) {
     }
 }
 
-// ===== INITIALIZATION =====
+// ===== INITIALIZATION (moved from index.html) =====
 document.addEventListener("DOMContentLoaded", () => {
+    // Dark Mode Toggle Setup
+    const toggleBtn = document.getElementById('darkToggle');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('theme',
+                document.body.classList.contains('dark-mode') ? 'dark' : 'light'
+            );
+        });
+    }
+
+    // Form Event Listeners
     const loginForm = document.getElementById("loginForm");
     if (loginForm) loginForm.addEventListener("submit", login);
 
     const regForm = document.getElementById("registerForm");
     if (regForm) regForm.addEventListener("submit", register);
 
+    // Dashboard Initialization
     if (document.body.classList.contains("dashboard")) {
         const token = getAuthToken();
         if (!token) {
@@ -504,4 +558,21 @@ document.addEventListener("DOMContentLoaded", () => {
             loadTransactions();
         }
     }
+
+    // Setup dynamic event listener for person headers (for future elements)
+    // This will handle the expand/collapse functionality for transaction groups
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.person-header')) {
+            const header = e.target.closest('.person-header');
+            const transactions = header.nextElementSibling;
+            const indicator = header.querySelector('.toggle-indicator');
+
+            if (transactions && indicator) {
+                const safeId = header.getAttribute('data-person');
+                if (safeId) {
+                    toggleTransactions(safeId);
+                }
+            }
+        }
+    });
 });

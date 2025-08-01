@@ -19,7 +19,7 @@
     <!-- Add Person -->
     <section>
         <h2>➕ Add Person</h2>
-        <form class="form-card" onsubmit="event.preventDefault(); addPerson();">
+        <form id="personForm" class="form-card" onsubmit="event.preventDefault(); addPerson();">
             <label for="personName" class="visually-hidden">Person Name</label>
             <input type="text" id="personName" placeholder="Enter name" required>
             <button type="submit" class="add-btn">Add Person</button>
@@ -48,7 +48,7 @@
     <!-- Send Money -->
     <section>
         <h2>📤 Send Money</h2>
-        <form class="transaction-form" onsubmit="event.preventDefault(); sendMoney();">
+        <form id="sendForm" class="transaction-form" onsubmit="event.preventDefault(); sendMoney();">
             <label for="sendName" class="visually-hidden">Select Person</label>
             <select id="sendName" required>
                 <option value="">Select Person</option>
@@ -64,7 +64,7 @@
     <!-- Receive Money -->
     <section>
         <h2>📥 Receive Money</h2>
-        <form class="transaction-form" onsubmit="event.preventDefault(); receiveMoney();">
+        <form id="receiveForm" class="transaction-form" onsubmit="event.preventDefault(); receiveMoney();">
             <label for="receiveName" class="visually-hidden">Select Person</label>
             <select id="receiveName" required>
                 <option value="">Select Person</option>
@@ -109,37 +109,5 @@
 
 <!-- JS -->
 <script src="script.js"></script>
-<script>
-    // Apply saved theme instantly to avoid flicker
-    (function() {
-        if(localStorage.getItem('theme') === 'dark'){
-            document.body.classList.add('dark-mode');
-        }
-    })();
-
-    document.addEventListener('DOMContentLoaded', () => {
-        const toggleBtn = document.getElementById('darkToggle');
-        toggleBtn.addEventListener('click', () => {
-            document.body.classList.toggle('dark-mode');
-            localStorage.setItem('theme',
-                document.body.classList.contains('dark-mode') ? 'dark' : 'light'
-            );
-        });
-
-        // Expand/collapse person transaction lists
-        document.querySelectorAll(".person-header").forEach(header => {
-            header.addEventListener("click", () => {
-                const transactions = header.nextElementSibling;
-                const indicator = header.querySelector(".toggle-indicator");
-
-                transactions.style.display =
-                    transactions.style.display === "block" ? "none" : "block";
-                if (indicator) {
-                    indicator.textContent = transactions.style.display === "block" ? "−" : "+";
-                }
-            });
-        });
-    });
-</script>
 </body>
 </html>
