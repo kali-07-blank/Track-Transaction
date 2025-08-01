@@ -289,7 +289,7 @@ async function reverseTransaction(id) {
     }
 }
 
-// ===== LOAD TRANSACTIONS (Grouped) =====
+// ===== LOAD TRANSACTIONS (Flexible Grouped) =====
 async function loadTransactions() {
     const container = document.getElementById("transactionsContainer");
     container.innerHTML = "<p>Loading transactions...</p>";
@@ -306,13 +306,13 @@ async function loadTransactions() {
             return;
         }
 
-        // Group by person
+        // Group by person (supports nested or flat)
         const grouped = {};
         transactions.forEach(t => {
-            if (t.type === "SEND") totalSent += t.amount;
-            else totalReceived += t.amount;
+            if (t.type?.toUpperCase() === "SEND") totalSent += t.amount;
+            else if (t.type?.toUpperCase() === "RECEIVE") totalReceived += t.amount;
 
-            const personName = t.person.name;
+            const personName = t.person?.name || t.personName || "Unknown";
             if (!grouped[personName]) grouped[personName] = [];
             grouped[personName].push(t);
         });
@@ -336,10 +336,10 @@ async function loadTransactions() {
             const txContainer = personDiv.querySelector(`#tx-${safeId}`);
             grouped[personName].forEach(t => {
                 const txDiv = document.createElement("div");
-                txDiv.className = `transaction-item ${t.type.toLowerCase()}`;
+                txDiv.className = `transaction-item ${t.type?.toLowerCase()}`;
                 txDiv.innerHTML = `
                     <div>
-                        <b>${t.type === "SEND" ? "📤 Sent" : "📥 Received"}</b>
+                        <b>${t.type?.toUpperCase() === "SEND" ? "📤 Sent" : "📥 Received"}</b>
                         ₹${t.amount}
                         <button class="reverse-btn" onclick="reverseTransaction(${t.id})">↩ Reverse</button>
                     </div>
@@ -359,7 +359,9 @@ async function loadTransactions() {
         document.getElementById("totalReceived").textContent = `₹${totalReceived}`;
         document.getElementById("netBalance").textContent = `₹${totalReceived - totalSent}`;
     } catch (err) {
+        console.error("Transaction load error:", err);
         showNotification("Failed to load transactions: " + err.message, "error");
+        container.innerHTML = "<p style='color:red;'>Error loading transactions.</p>";
     }
 }
 
