@@ -43,7 +43,7 @@ async function authFetch(url, options = {}) {
         "Content-Type": "application/json"
     };
     if (token) options.headers["Authorization"] = `Bearer ${token}`;
-    options.credentials = "include"; // ✅ required with allowCredentials(true)
+    options.credentials = "include";
 
     try {
         const res = await fetch(url, options);
@@ -166,9 +166,10 @@ async function loadPeople() {
                 balance < 0 ? "balance-negative" : "balance-zero";
 
             const row = document.createElement("tr");
+            row.setAttribute("data-person", p.name);
             row.innerHTML = `
                 <td>${p.name}</td>
-                <td><span class="${balanceClass}">₹${balance}</span></td>
+                <td class="balance-cell"><span class="${balanceClass}">₹${balance}</span></td>
                 <td><button class="delete-btn" onclick="deletePerson('${p.name}')">🗑️ Delete</button></td>
             `;
             table.appendChild(row);
@@ -278,18 +279,74 @@ async function reverseTransaction(id) {
     if (!confirm("Are you sure you want to reverse this transaction?")) return;
 
     try {
-        const res = await authFetch(`${TRANSACTION_API}/${id}/reverse`, { method: "DELETE" });
+        const res = await authFetch(`${TRANSACTION_API}/reverse/${id}`, { method: "POST" });
         if (!res.ok) throw new Error(await res.text());
 
+        const updated = await res.json();
+
         showNotification("🔄 Transaction reversed successfully!", "success");
-        loadPeople();
-        loadTransactions();
+
+        // Update transaction item UI
+        const txBtn = document.querySelector(`.reverse-btn[onclick="reverseTransaction(${id})"]`);
+        if (txBtn) {
+            const txItem = txBtn.closest(".transaction-item");
+            txBtn.remove();
+            txItem.classList.add("reversed");
+            const label = document.createElement("span");
+            label.className = "reversed-label";
+            label.textContent = "(Reversed)";
+            txItem.querySelector("div b").after(label);
+
+            // Move reversed transaction to bottom
+            const txContainer = txItem.closest(".person-transactions");
+            if (txContainer) {
+                txContainer.appendChild(txItem);
+            }
+        }
+
+        // Update balance instantly in people table
+        if (updated?.person?.name && typeof updated?.person?.balance === "number") {
+            const row = document.querySelector(`#peopleList tr[data-person="${updated.person.name}"]`);
+            if (row) {
+                const balanceCell = row.querySelector(".balance-cell");
+                if (balanceCell) {
+                    const balance = updated.person.balance;
+                    const balanceClass =
+                        balance > 0 ? "balance-positive" :
+                        balance < 0 ? "balance-negative" : "balance-zero";
+                    balanceCell.innerHTML = `<span class="${balanceClass}">₹${balance}</span>`;
+                }
+            }
+        }
+
+        // Update totals instantly
+        if (updated?.transaction) {
+            const t = updated.transaction;
+            const totalSentEl = document.getElementById("totalSent");
+            const totalReceivedEl = document.getElementById("totalReceived");
+            const netBalanceEl = document.getElementById("netBalance");
+
+            let totalSent = parseFloat(totalSentEl.textContent.replace("₹", "")) || 0;
+            let totalReceived = parseFloat(totalReceivedEl.textContent.replace("₹", "")) || 0;
+
+            if (t.type?.toUpperCase() === "SEND") {
+                totalSent -= t.amount;
+            } else if (t.type?.toUpperCase() === "RECEIVE") {
+                totalReceived -= t.amount;
+            }
+
+            totalSentEl.textContent = `₹${totalSent}`;
+            totalReceivedEl.textContent = `₹${totalReceived}`;
+            netBalanceEl.textContent = `₹${totalReceived - totalSent}`;
+        }
+
     } catch (err) {
         showNotification("Failed to reverse transaction: " + err.message, "error");
     }
 }
+let lastActiveSafeId = null; // Track by safeId instead of person name
 
-// ===== LOAD TRANSACTIONS (Flexible Grouped) =====
+// ===== LOAD TRANSACTIONS (Grouped & Collapsible) =====
 async function loadTransactions() {
     const container = document.getElementById("transactionsContainer");
     container.innerHTML = "<p>Loading transactions...</p>";
@@ -303,14 +360,19 @@ async function loadTransactions() {
 
         if (!transactions.length) {
             container.innerHTML = "<p>No transactions yet</p>";
+            document.getElementById("totalSent").textContent = "₹0";
+            document.getElementById("totalReceived").textContent = "₹0";
+            document.getElementById("netBalance").textContent = "₹0";
             return;
         }
 
         // Group by person
         const grouped = {};
         transactions.forEach(t => {
-            if (t.type?.toUpperCase() === "SEND") totalSent += t.amount;
-            else if (t.type?.toUpperCase() === "RECEIVE") totalReceived += t.amount;
+            if (t.reversed !== true) {
+                if (t.type?.toUpperCase() === "SEND") totalSent += t.amount;
+                else if (t.type?.toUpperCase() === "RECEIVE") totalReceived += t.amount;
+            }
 
             const personName = t.person?.name || t.personName || "Unknown";
             if (!grouped[personName]) grouped[personName] = [];
@@ -334,24 +396,29 @@ async function loadTransactions() {
             container.appendChild(personDiv);
 
             const txContainer = personDiv.querySelector(`#tx-${safeId}`);
-            grouped[personName].forEach(t => {
-                const txDiv = document.createElement("div");
-                txDiv.className = `transaction-item ${t.type?.toLowerCase()}`;
-                txDiv.innerHTML = `
-                    <div>
-                        <b>${t.type?.toUpperCase() === "SEND" ? "📤 Sent" : "📥 Received"}</b>
-                        ₹${t.amount}
-                        <button class="reverse-btn" onclick="reverseTransaction(${t.id})">↩ Reverse</button>
-                    </div>
-                    <div>
-                        <small>${t.description || "No description"} (${new Date(t.date).toLocaleDateString()})</small>
-                    </div>
-                `;
-                txContainer.appendChild(txDiv);
-            });
+            grouped[personName]
+                .sort((a, b) => (a.reversed === b.reversed ? 0 : a.reversed ? 1 : -1))
+                .forEach(t => {
+                    const isReversed = t.reversed === true;
+                    const txDiv = document.createElement("div");
+                    txDiv.className = `transaction-item ${t.type?.toLowerCase()} ${isReversed ? "reversed" : ""}`;
+                    txDiv.innerHTML = `
+                        <div>
+                            <b>${t.type?.toUpperCase() === "SEND" ? "📤 Sent" : "📥 Received"}</b>
+                            ₹${t.amount}
+                            ${isReversed
+                                ? "<span class='reversed-label'>(Reversed)</span>"
+                                : `<button class="reverse-btn" onclick="reverseTransaction(${t.id}, '${safeId}')">↩ Reverse</button>`}
+                        </div>
+                        <div>
+                            <small>${t.description || "No description"} (${new Date(t.date).toLocaleDateString()})</small>
+                        </div>
+                    `;
+                    txContainer.appendChild(txDiv);
+                });
 
-            if (lastActivePerson && lastActivePerson === personName) {
-                toggleTransactions(safeId);
+            if (lastActiveSafeId && lastActiveSafeId === safeId) {
+                toggleTransactions(safeId, true);
             }
         });
 
@@ -366,17 +433,30 @@ async function loadTransactions() {
 }
 
 // ===== TOGGLE TRANSACTIONS =====
-function toggleTransactions(safeId) {
+function toggleTransactions(safeId, autoScroll = false) {
     const txDiv = document.getElementById(`tx-${safeId}`);
     const indicator = txDiv.parentElement.querySelector(".toggle-indicator");
     if (txDiv.style.display === "none") {
+        // Close any other open transactions first
+        document.querySelectorAll(".person-transactions").forEach(el => el.style.display = "none");
+        document.querySelectorAll(".toggle-indicator").forEach(el => el.textContent = "+");
+
         txDiv.style.display = "block";
         indicator.textContent = "−";
+        lastActiveSafeId = safeId; // save which one is open
+
+        if (autoScroll) {
+            setTimeout(() => {
+                txDiv.scrollIntoView({ behavior: "smooth", block: "start" });
+            }, 200);
+        }
     } else {
         txDiv.style.display = "none";
         indicator.textContent = "+";
+        lastActiveSafeId = null;
     }
 }
+
 
 // ===== INITIALIZATION =====
 document.addEventListener("DOMContentLoaded", () => {

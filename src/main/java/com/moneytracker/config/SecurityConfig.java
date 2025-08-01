@@ -47,9 +47,12 @@ public class SecurityConfig {
                 .csrf(cs -> cs.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/index.html", "/login.html", "/register.html",
-                                "/style.css", "/script.js").permitAll()
+                        .requestMatchers(
+                                "/", "/index.html", "/login.html", "/register.html",
+                                "/style.css", "/script.js"
+                        ).permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
+//                        .requestMatchers("/api/transactions/all").permitAll() // ✅ allow all to fetch transactions
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().authenticated()
                 )
@@ -67,7 +70,8 @@ public class SecurityConfig {
         config.setAllowedOriginPatterns(Arrays.asList(
                 "http://localhost:8080",
                 "http://127.0.0.1:8080",
-                "https://localhost:8080",  // optional HTTPS localhost
+                "https://localhost:8080",
+                "http://localhost:3000", // ✅ add React dev server if needed
                 "https://cheerful-tiramisu-44b0ee.netlify.app",
                 "https://track-transaction.onrender.com"
         ));

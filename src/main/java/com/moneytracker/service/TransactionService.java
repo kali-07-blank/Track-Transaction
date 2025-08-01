@@ -12,7 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -50,6 +49,9 @@ public class TransactionService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Reverse a transaction by removing its effects and deleting it.
+     */
     public void reverseTransaction(Long userId, Long transactionId) {
         Transaction original = transactionRepository.findById(transactionId)
                 .orElseThrow(() -> new RuntimeException("Transaction not found"));
@@ -61,33 +63,19 @@ public class TransactionService {
         Person person = original.getPerson();
         double amount = original.getAmount();
 
-        // Create opposite transaction
-        TransactionType reversedType =
-                original.getType() == TransactionType.SEND ? TransactionType.RECEIVE : TransactionType.SEND;
-
-        Transaction reversed = new Transaction();
-        reversed.setUser(original.getUser());
-        reversed.setPerson(person);
-        reversed.setAmount(amount);
-        reversed.setDescription("Reversal of Tx #" + original.getId());
-        reversed.setType(reversedType);
-        reversed.setTransactionDate(LocalDateTime.now());
-
-        // ✅ Correct balance adjustment (undo the original)
+        // ✅ Adjust the balance by undoing the original transaction
         if (original.getType() == TransactionType.SEND) {
-            // Undo a SEND → give amount back
+            // Undo a SEND → give the amount back
             person.setBalance(person.getBalance() + amount);
         } else {
-            // Undo a RECEIVE → remove amount
+            // Undo a RECEIVE → subtract the amount
             person.setBalance(person.getBalance() - amount);
         }
 
-        transactionRepository.save(reversed);
         personRepository.save(person);
 
-        // Optional: mark original as reversed (so it can't be reversed again)
-        original.setDescription(original.getDescription() + " (REVERSED)");
-        transactionRepository.save(original);
+        // ✅ Delete the original transaction instead of creating a new one
+        transactionRepository.delete(original);
     }
 
     private TransactionDTO convertToDTO(Transaction transaction) {
