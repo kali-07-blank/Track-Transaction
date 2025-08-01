@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Register | Money Tracker</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="register-page">
+
+<div class="register-container">
+    <h1>📝 Register for Money Tracker</h1>
+    <form id="registerForm">
+        <div class="input-group">
+            <i>👤</i>
+            <input type="text" id="regUsername" placeholder="Enter username" required>
+        </div>
+        <div class="input-group">
+            <i>🔒</i>
+            <input type="password" id="regPassword" placeholder="Enter password" required>
+        </div>
+        <button type="submit">✅ Register</button>
+    </form>
+
+    <!-- Button-style link to login -->
+    <p style="margin-top: 15px; text-align:center;">
+        <a href="login.html" class="link-btn">Already have an account? Login</a>
+    </p>
+</div>
+
+<!-- Notification -->
+<div id="notification" class="notification"></div>
+
+<!-- JS -->
+<script src="script.js"></script>
+
+</body>
+</html>
