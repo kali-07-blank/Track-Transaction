@@ -14,7 +14,7 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins(
+                        .allowedOriginPatterns(
                                 "http://localhost:8080",
                                 "https://cheerful-tiramisu-44b0ee.netlify.app",
                                 "https://track-transaction.onrender.com"
