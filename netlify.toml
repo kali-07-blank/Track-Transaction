@@ -1,0 +1,8 @@
+[build]
+publish = "frontend"
+
+[[redirects]]
+from = "/api/*"
+to = "http://106.219.123.119:8080/api/:splat"
+status = 200
+force = true
