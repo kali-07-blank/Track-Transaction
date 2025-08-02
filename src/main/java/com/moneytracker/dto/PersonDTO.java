@@ -1,7 +1,17 @@
 package com.moneytracker.dto;
 
-import jakarta.validation.constraints.*;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
+import java.time.LocalDateTime;
+
+/**
+ * Data Transfer Object for Person entity
+ */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class PersonDTO {
 
     private Long id;
@@ -12,21 +22,18 @@ public class PersonDTO {
     private String username;
 
     @NotBlank(message = "Email is required")
-    @Email(message = "Email should be valid")
+    @Email(message = "Invalid email format")
     private String email;
 
-    @NotBlank(message = "Password is required")
-    @Size(min = 8, message = "Password must be at least 8 characters")
-    @Pattern(
-            regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&]).+$",
-            message = "Password must contain uppercase, lowercase, digit, and special character"
-    )
-    private String password;
-
     @NotBlank(message = "Full name is required")
-    @Size(max = 255, message = "Full name cannot exceed 255 characters")
+    @Size(max = 255, message = "Full name must not exceed 255 characters")
     private String fullName;
 
+    private String role;
+    private LocalDateTime createdDate;
+    private LocalDateTime lastModifiedDate;
+
+    // Constructors
     public PersonDTO() {}
 
     public PersonDTO(Long id, String username, String email, String fullName) {
@@ -46,9 +53,15 @@ public class PersonDTO {
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
 
-    public String getPassword() { return password; }
-    public void setPassword(String password) { this.password = password; }
-
     public String getFullName() { return fullName; }
     public void setFullName(String fullName) { this.fullName = fullName; }
+
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
+
+    public LocalDateTime getCreatedDate() { return createdDate; }
+    public void setCreatedDate(LocalDateTime createdDate) { this.createdDate = createdDate; }
+
+    public LocalDateTime getLastModifiedDate() { return lastModifiedDate; }
+    public void setLastModifiedDate(LocalDateTime lastModifiedDate) { this.lastModifiedDate = lastModifiedDate; }
 }

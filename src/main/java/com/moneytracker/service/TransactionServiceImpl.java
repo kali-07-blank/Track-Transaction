@@ -1,4 +1,4 @@
-package com.moneytracker.service;
+package com.moneytracker.service.impl;
 
 import com.moneytracker.dto.TransactionDTO;
 import com.moneytracker.dto.TransactionSummaryDTO;
@@ -6,234 +6,241 @@ import com.moneytracker.entity.Person;
 import com.moneytracker.entity.Transaction;
 import com.moneytracker.enums.TransactionType;
 import com.moneytracker.exception.ResourceNotFoundException;
+import com.moneytracker.exception.UnauthorizedAccessException;
 import com.moneytracker.repository.PersonRepository;
 import com.moneytracker.repository.TransactionRepository;
+import com.moneytracker.service.PersonService;
+import com.moneytracker.service.TransactionService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
+/**
+ * Implementation of TransactionService
+ *
+ * @author MoneyTracker Team
+ * @version 1.0.0
+ */
 @Service
 @Transactional
 public class TransactionServiceImpl implements TransactionService {
 
+    private static final Logger logger = LoggerFactory.getLogger(TransactionServiceImpl.class);
+
     private final TransactionRepository transactionRepository;
     private final PersonRepository personRepository;
+    private final PersonService personService;
 
     @Autowired
-    public TransactionServiceImpl(TransactionRepository transactionRepository, PersonRepository personRepository) {
+    public TransactionServiceImpl(TransactionRepository transactionRepository,
+                                  PersonRepository personRepository,
+                                  PersonService personService) {
         this.transactionRepository = transactionRepository;
         this.personRepository = personRepository;
+        this.personService = personService;
     }
 
     @Override
     public TransactionDTO createTransaction(TransactionDTO transactionDTO) {
-        validateTransactionData(transactionDTO);
+        logger.info("Creating new transaction for person ID: {}", transactionDTO.getPersonId());
 
+        // Validate person exists
         Person person = personRepository.findById(transactionDTO.getPersonId())
-                .orElseThrow(() -> new ResourceNotFoundException("Person not found with id: " + transactionDTO.getPersonId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Person not found with ID: " + transactionDTO.getPersonId()));
 
-        Transaction transaction = new Transaction();
-        transaction.setAmount(transactionDTO.getAmount());
-        transaction.setDescription(transactionDTO.getDescription());
-        transaction.setTransactionType(transactionDTO.getTransactionType()); // ✅ fixed enum usage
-        transaction.setCategory(transactionDTO.getCategory());
+        Transaction transaction = convertToEntity(transactionDTO);
         transaction.setPerson(person);
-        transaction.setTransactionDate(transactionDTO.getTransactionDate() != null ?
-                transactionDTO.getTransactionDate() : LocalDateTime.now());
 
-        applyBusinessRules(transaction);
+        // Set transaction date to current time if not provided
+        if (transaction.getTransactionDate() == null) {
+            transaction.setTransactionDate(LocalDateTime.now());
+        }
 
         Transaction savedTransaction = transactionRepository.save(transaction);
+
+        logger.info("Successfully created transaction with ID: {}", savedTransaction.getId());
         return convertToDTO(savedTransaction);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public TransactionDTO getTransactionById(Long id) {
-        Transaction transaction = transactionRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Transaction not found with id: " + id));
-        return convertToDTO(transaction);
+    public Optional<TransactionDTO> getTransactionById(Long id, Long personId) {
+        logger.debug("Fetching transaction by ID: {} for person: {}", id, personId);
+
+        return transactionRepository.findByIdAndPersonId(id, personId)
+                .map(this::convertToDTO);
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<TransactionDTO> getTransactionsByPersonId(Long personId) {
-        validatePersonExists(personId);
-        return transactionRepository.findByPersonIdOrderByTransactionDateDesc(personId)
-                .stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
+    public TransactionDTO updateTransaction(Long id, TransactionDTO transactionDTO, Long personId) {
+        logger.info("Updating transaction with ID: {} for person: {}", id, personId);
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<TransactionDTO> getTransactionsByPersonIdAndType(Long personId, TransactionType type) {
-        validatePersonExists(personId);
-        validateTransactionType(type);
+        Transaction existingTransaction = transactionRepository.findByIdAndPersonId(id, personId)
+                .orElseThrow(() -> new ResourceNotFoundException("Transaction not found with ID: " + id));
 
-        return transactionRepository.findByPersonIdAndTransactionTypeOrderByTransactionDateDesc(personId, type)
-                .stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<TransactionDTO> getTransactionsByPersonIdAndCategory(Long personId, String category) {
-        validatePersonExists(personId);
-        validateCategory(category);
-
-        return transactionRepository.findByPersonIdAndCategoryOrderByTransactionDateDesc(personId, category)
-                .stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<TransactionDTO> getTransactionsByDateRange(Long personId, LocalDateTime startDate, LocalDateTime endDate) {
-        validatePersonExists(personId);
-        validateDateRange(startDate, endDate);
-
-        return transactionRepository.findByPersonIdAndDateRange(personId, startDate, endDate)
-                .stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public TransactionDTO updateTransaction(Long id, TransactionDTO transactionDTO) {
-        Transaction existingTransaction = transactionRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Transaction not found with id: " + id));
-
-        validateTransactionDataForUpdate(transactionDTO);
-
-        existingTransaction.setAmount(transactionDTO.getAmount());
-        existingTransaction.setDescription(transactionDTO.getDescription());
-        existingTransaction.setTransactionType(transactionDTO.getTransactionType()); // ✅ fixed enum usage
-        existingTransaction.setCategory(transactionDTO.getCategory());
-
-        if (transactionDTO.getTransactionDate() != null) {
-            existingTransaction.setTransactionDate(transactionDTO.getTransactionDate());
+        // Verify the person owns this transaction
+        if (!existingTransaction.getPerson().getId().equals(personId)) {
+            throw new UnauthorizedAccessException("Not authorized to update this transaction");
         }
 
-        applyBusinessRules(existingTransaction);
+        // Update fields
+        existingTransaction.setAmount(transactionDTO.getAmount());
+        existingTransaction.setDescription(transactionDTO.getDescription());
+        existingTransaction.setTransactionType(transactionDTO.getTransactionType());
+        existingTransaction.setTransactionDate(transactionDTO.getTransactionDate());
+        existingTransaction.setCategory(transactionDTO.getCategory());
+        existingTransaction.setTags(transactionDTO.getTags());
+        existingTransaction.setLocation(transactionDTO.getLocation());
+        existingTransaction.setNotes(transactionDTO.getNotes());
 
         Transaction updatedTransaction = transactionRepository.save(existingTransaction);
+
+        logger.info("Successfully updated transaction with ID: {}", id);
         return convertToDTO(updatedTransaction);
     }
 
     @Override
-    public void deleteTransaction(Long id) {
-        if (!transactionRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Transaction not found with id: " + id);
+    public void deleteTransaction(Long id, Long personId) {
+        logger.info("Deleting transaction with ID: {} for person: {}", id, personId);
+
+        Transaction transaction = transactionRepository.findByIdAndPersonId(id, personId)
+                .orElseThrow(() -> new ResourceNotFoundException("Transaction not found with ID: " + id));
+
+        // Verify the person owns this transaction
+        if (!transaction.getPerson().getId().equals(personId)) {
+            throw new UnauthorizedAccessException("Not authorized to delete this transaction");
         }
-        transactionRepository.deleteById(id);
+
+        transactionRepository.delete(transaction);
+        logger.info("Successfully deleted transaction with ID: {}", id);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<TransactionDTO> getTransactionsByPersonId(Long personId, Pageable pageable) {
+        logger.debug("Fetching transactions for person ID: {} with pagination: {}", personId, pageable);
+        return transactionRepository.findByPersonIdOrderByTransactionDateDesc(personId, pageable)
+                .map(this::convertToDTO);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<TransactionDTO> getTransactionsByPersonIdAndDateRange(Long personId, LocalDateTime startDate,
+                                                                      LocalDateTime endDate, Pageable pageable) {
+        logger.debug("Fetching transactions for person ID: {} between {} and {}", personId, startDate, endDate);
+        return transactionRepository.findByPersonIdAndDateRange(personId, startDate, endDate, pageable)
+                .map(this::convertToDTO);
     }
 
     @Override
     @Transactional(readOnly = true)
     public TransactionSummaryDTO getTransactionSummary(Long personId) {
-        validatePersonExists(personId);
+        logger.debug("Calculating transaction summary for person ID: {}", personId);
 
-        BigDecimal totalIncome = transactionRepository.getTotalIncomeByPersonId(personId);
-        BigDecimal totalExpenses = transactionRepository.getTotalExpensesByPersonId(personId);
-        BigDecimal balance = transactionRepository.getBalanceByPersonId(personId);
+        BigDecimal totalIncome = transactionRepository.sumAmountByPersonIdAndTransactionType(personId, TransactionType.INCOME);
+        BigDecimal totalExpense = transactionRepository.sumAmountByPersonIdAndTransactionType(personId, TransactionType.EXPENSE);
+        long totalTransactions = transactionRepository.countByPersonId(personId);
 
-        return new TransactionSummaryDTO(
-                totalIncome != null ? totalIncome : BigDecimal.ZERO,
-                totalExpenses != null ? totalExpenses : BigDecimal.ZERO,
-                balance != null ? balance : BigDecimal.ZERO
-        );
+        if (totalIncome == null) totalIncome = BigDecimal.ZERO;
+        if (totalExpense == null) totalExpense = BigDecimal.ZERO;
+
+        BigDecimal netAmount = totalIncome.subtract(totalExpense);
+
+        TransactionSummaryDTO summary = new TransactionSummaryDTO();
+        summary.setTotalIncome(totalIncome);
+        summary.setTotalExpense(totalExpense);
+        summary.setNetAmount(netAmount);
+        summary.setTotalTransactions(totalTransactions);
+
+        return summary;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<String> getCategoriesByPersonId(Long personId) {
-        validatePersonExists(personId);
-        return transactionRepository.getDistinctCategoriesByPersonId(personId);
+    public TransactionSummaryDTO getTransactionSummary(Long personId, LocalDateTime startDate, LocalDateTime endDate) {
+        logger.debug("Calculating transaction summary for person ID: {} between {} and {}", personId, startDate, endDate);
+
+        BigDecimal totalIncome = transactionRepository.sumAmountByPersonIdAndTransactionTypeAndDateRange(
+                personId, TransactionType.INCOME, startDate, endDate);
+        BigDecimal totalExpense = transactionRepository.sumAmountByPersonIdAndTransactionTypeAndDateRange(
+                personId, TransactionType.EXPENSE, startDate, endDate);
+        long totalTransactions = transactionRepository.countByPersonIdAndDateRange(personId, startDate, endDate);
+
+        if (totalIncome == null) totalIncome = BigDecimal.ZERO;
+        if (totalExpense == null) totalExpense = BigDecimal.ZERO;
+
+        BigDecimal netAmount = totalIncome.subtract(totalExpense);
+
+        TransactionSummaryDTO summary = new TransactionSummaryDTO();
+        summary.setTotalIncome(totalIncome);
+        summary.setTotalExpense(totalExpense);
+        summary.setNetAmount(netAmount);
+        summary.setTotalTransactions(totalTransactions);
+        summary.setPeriodStart(startDate);
+        summary.setPeriodEnd(endDate);
+
+        return summary;
     }
 
-    // ---------- Private Helpers ----------
-
-    private void validatePersonExists(Long personId) {
-        if (personId == null) {
-            throw new IllegalArgumentException("Person ID cannot be null");
-        }
-        if (!personRepository.existsById(personId)) {
-            throw new ResourceNotFoundException("Person not found with id: " + personId);
-        }
+    @Override
+    @Transactional(readOnly = true)
+    public List<String> getDistinctCategories(Long personId) {
+        logger.debug("Fetching distinct categories for person ID: {}", personId);
+        return transactionRepository.findDistinctCategoriesByPersonId(personId);
     }
 
-    private void validateTransactionData(TransactionDTO transactionDTO) {
-        if (transactionDTO.getAmount() == null || transactionDTO.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Amount must be greater than zero");
-        }
-        if (transactionDTO.getDescription() == null || transactionDTO.getDescription().trim().isEmpty()) {
-            throw new IllegalArgumentException("Description is required");
-        }
-        if (transactionDTO.getTransactionType() == null) {
-            throw new IllegalArgumentException("Transaction type is required");
-        }
-        if (transactionDTO.getPersonId() == null) {
-            throw new IllegalArgumentException("Person ID is required");
-        }
-    }
-
-    private void validateTransactionDataForUpdate(TransactionDTO transactionDTO) {
-        validateTransactionData(transactionDTO); // reuse same validations except personId
-    }
-
-    private void validateTransactionType(TransactionType type) {
-        if (type == null) {
-            throw new IllegalArgumentException("Transaction type cannot be null");
-        }
-    }
-
-    private void validateCategory(String category) {
-        if (category == null || category.trim().isEmpty()) {
-            throw new IllegalArgumentException("Category cannot be null or empty");
-        }
-    }
-
-    private void validateDateRange(LocalDateTime startDate, LocalDateTime endDate) {
-        if (startDate == null || endDate == null) {
-            throw new IllegalArgumentException("Date range cannot be null");
-        }
-        if (startDate.isAfter(endDate)) {
-            throw new IllegalArgumentException("Start date cannot be after end date");
-        }
-    }
-
-    private void applyBusinessRules(Transaction transaction) {
-        if (transaction.getTransactionType() == TransactionType.TRANSFER &&
-                transaction.getAmount().compareTo(new BigDecimal("100000")) > 0) {
-            throw new IllegalArgumentException("Transfer amount cannot exceed 100,000");
+    @Override
+    public TransactionDTO convertToDTO(Transaction transaction) {
+        if (transaction == null) {
+            return null;
         }
 
-        if (transaction.getCategory() == null || transaction.getCategory().trim().isEmpty()) {
-            switch (transaction.getTransactionType()) {
-                case INCOME -> transaction.setCategory("Income");
-                case EXPENSE -> transaction.setCategory("General Expense");
-                case TRANSFER -> transaction.setCategory("Transfer");
-            }
-        }
-    }
-
-    private TransactionDTO convertToDTO(Transaction transaction) {
         TransactionDTO dto = new TransactionDTO();
         dto.setId(transaction.getId());
         dto.setAmount(transaction.getAmount());
         dto.setDescription(transaction.getDescription());
-        dto.setTransactionType(transaction.getTransactionType()); // ✅ fixed enum usage
+        dto.setTransactionType(transaction.getTransactionType());
         dto.setTransactionDate(transaction.getTransactionDate());
         dto.setCategory(transaction.getCategory());
+        dto.setTags(transaction.getTags());
+        dto.setLocation(transaction.getLocation());
+        dto.setNotes(transaction.getNotes());
         dto.setPersonId(transaction.getPerson().getId());
+        dto.setPerson(personService.convertToDTO(transaction.getPerson()));
+        dto.setCreatedDate(transaction.getCreatedDate());
+        dto.setLastModifiedDate(transaction.getLastModifiedDate());
+        dto.setVersion(transaction.getVersion());
+
         return dto;
+    }
+
+    @Override
+    public Transaction convertToEntity(TransactionDTO transactionDTO) {
+        if (transactionDTO == null) {
+            return null;
+        }
+
+        Transaction transaction = new Transaction();
+        transaction.setId(transactionDTO.getId());
+        transaction.setAmount(transactionDTO.getAmount());
+        transaction.setDescription(transactionDTO.getDescription());
+        transaction.setTransactionType(transactionDTO.getTransactionType());
+        transaction.setTransactionDate(transactionDTO.getTransactionDate());
+        transaction.setCategory(transactionDTO.getCategory());
+        transaction.setTags(transactionDTO.getTags());
+        transaction.setLocation(transactionDTO.getLocation());
+        transaction.setNotes(transactionDTO.getNotes());
+        transaction.setVersion(transactionDTO.getVersion());
+
+        return transaction;
     }
 }

@@ -2,14 +2,18 @@ package com.moneytracker.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
+/**
+ * Data Transfer Object for login requests
+ */
 public class LoginRequestDTO {
 
-    @NotBlank(message = "Identifier (username/email) is required")
+    @NotBlank(message = "Identifier (username or email) is required")
     private String identifier;
 
     @NotBlank(message = "Password is required")
     private String password;
 
+    // Constructors
     public LoginRequestDTO() {}
 
     public LoginRequestDTO(String identifier, String password) {
@@ -17,6 +21,7 @@ public class LoginRequestDTO {
         this.password = password;
     }
 
+    // Getters and setters
     public String getIdentifier() { return identifier; }
     public void setIdentifier(String identifier) { this.identifier = identifier; }
 
