@@ -84,6 +84,13 @@ public class JwtUtil {
     }
 
     /**
+     * Extract username from token (alias method for compatibility)
+     */
+    public String getUsernameFromToken(String token) {
+        return extractUsername(token);
+    }
+
+    /**
      * Extract user ID from token
      */
     public Long extractUserId(String token) {
@@ -138,6 +145,14 @@ public class JwtUtil {
             logger.error("Token validation failed: {}", e.getMessage());
             return false;
         }
+    }
+
+    /**
+     * Validate token with user details (alias method for compatibility)
+     */
+    public Boolean validateToken(String token, org.springframework.security.core.userdetails.UserDetails userDetails) {
+        final String username = extractUsername(token);
+        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token) && !isTokenBlacklisted(token));
     }
 
     /**

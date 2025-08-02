@@ -5,7 +5,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum TransactionType {
     INCOME("INCOME"),
-    EXPENSE("EXPENSE");
+    EXPENSE("EXPENSE"),
+    TRANSFER("TRANSFER");
 
     private final String value;
 
@@ -31,7 +32,7 @@ public enum TransactionType {
         }
 
         throw new IllegalArgumentException("Invalid transaction type: " + value +
-                ". Valid values are: INCOME, EXPENSE");
+                ". Valid values are: INCOME, EXPENSE, TRANSFER");
     }
 
     @Override

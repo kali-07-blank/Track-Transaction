@@ -10,6 +10,10 @@ import java.util.List;
 @Table(name = "persons")
 public class Person {
 
+    public enum Role {
+        USER, ADMIN
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -33,6 +37,13 @@ public class Person {
     @NotBlank(message = "Full name is required")
     @Size(max = 100, message = "Full name cannot exceed 100 characters")
     private String fullName;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role = Role.USER;
+
+    @Column(nullable = false)
+    private boolean enabled = true;
 
     @OneToMany(mappedBy = "person", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Transaction> transactions;
@@ -95,6 +106,22 @@ public class Person {
 
     public void setTransactions(List<Transaction> transactions) {
         this.transactions = transactions;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
     }
 
     @Override
