@@ -23,7 +23,7 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
         ErrorResponse errorResponse = new ErrorResponse(
                 HttpServletResponse.SC_UNAUTHORIZED,
-                "Unauthorized",
+                "UNAUTHORIZED",
                 "You must provide a valid JWT token",
                 request.getRequestURI(),
                 LocalDateTime.now()

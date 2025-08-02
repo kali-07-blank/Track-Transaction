@@ -32,6 +32,13 @@ public class ErrorResponse {
         this.timestamp = timestamp;
     }
 
+    public ErrorResponse(int statusCode, String errorCode, String errorMessage, String path, LocalDateTime timestamp) {
+        this.errorCode = String.valueOf(statusCode);
+        this.errorMessage = errorMessage;
+        this.path = path;
+        this.timestamp = timestamp;
+    }
+
     // Getters and setters
     public String getErrorCode() { return errorCode; }
     public void setErrorCode(String errorCode) { this.errorCode = errorCode; }

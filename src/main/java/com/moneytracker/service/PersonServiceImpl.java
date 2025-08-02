@@ -14,6 +14,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 @Service
 @Transactional
 public class PersonServiceImpl implements PersonService {
@@ -48,18 +51,16 @@ public class PersonServiceImpl implements PersonService {
 
     @Override
     @Transactional(readOnly = true)
-    public PersonDTO getPersonById(Long id) {
-        Person person = personRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Person not found with id: " + id));
-        return convertToDTO(person);
+    public Optional<PersonDTO> getPersonById(Long id) {
+        Optional<Person> person = personRepository.findById(id);
+        return person.map(this::convertToDTO);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<PersonDTO> getAllPersons() {
-        return personRepository.findAll().stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+    public Page<PersonDTO> getAllPersons(Pageable pageable) {
+        return personRepository.findAll(pageable)
+                .map(this::convertToDTO);
     }
 
     @Override
@@ -106,31 +107,32 @@ public class PersonServiceImpl implements PersonService {
 
     @Override
     @Transactional(readOnly = true)
-    public PersonDTO findByUsername(String username) {
-        Person person = personRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("Person not found with username: " + username));
-        return convertToDTO(person);
+    public Optional<PersonDTO> getPersonByUsername(String username) {
+        Optional<Person> person = personRepository.findByUsername(username);
+        return person.map(this::convertToDTO);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public PersonDTO findByEmail(String email) {
-        Person person = personRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("Person not found with email: " + email));
-        return convertToDTO(person);
+    public Optional<PersonDTO> getPersonByEmail(String email) {
+        Optional<Person> person = personRepository.findByEmail(email);
+        return person.map(this::convertToDTO);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<Person> findByUsernameOrEmail(String identifier) {
-        Optional<Person> person = personRepository.findByUsername(identifier);
-        if (person.isEmpty()) {
-            person = personRepository.findByEmail(identifier);
-        }
-        return person;
+    public boolean existsByUsername(String username) {
+        return personRepository.findByUsername(username).isPresent();
     }
 
-    private PersonDTO convertToDTO(Person person) {
+    @Override
+    @Transactional(readOnly = true)
+    public boolean existsByEmail(String email) {
+        return personRepository.findByEmail(email).isPresent();
+    }
+
+    @Override
+    public PersonDTO convertToDTO(Person person) {
         PersonDTO dto = new PersonDTO();
         dto.setId(person.getId());
         dto.setUsername(person.getUsername());
@@ -140,7 +142,8 @@ public class PersonServiceImpl implements PersonService {
         return dto;
     }
 
-    private Person convertToEntity(PersonDTO dto) {
+    @Override
+    public Person convertToEntity(PersonDTO dto) {
         Person person = new Person();
         person.setId(dto.getId());
         person.setUsername(dto.getUsername());

@@ -6,6 +6,7 @@ import com.moneytracker.enums.TransactionType;
 import com.moneytracker.repository.TransactionRepository;
 import com.moneytracker.util.DateRangeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -32,7 +33,7 @@ public class TransactionReportService {
         LocalDateTime startDate = DateRangeUtil.getStartOfMonth(year, month);
         LocalDateTime endDate = DateRangeUtil.getEndOfMonth(year, month);
 
-        List<Transaction> transactions = transactionRepository.findByPersonIdAndDateRange(personId, startDate, endDate);
+        List<Transaction> transactions = transactionRepository.findByPersonIdAndDateRange(personId, startDate, endDate, Pageable.unpaged()).getContent();
 
         return transactions.stream()
                 .filter(t -> t.getTransactionType() == TransactionType.EXPENSE)
@@ -56,7 +57,7 @@ public class TransactionReportService {
             LocalDateTime startDate = DateRangeUtil.getStartOfMonth(year, month);
             LocalDateTime endDate = DateRangeUtil.getEndOfMonth(year, month);
 
-            List<Transaction> transactions = transactionRepository.findByPersonIdAndDateRange(personId, startDate, endDate);
+            List<Transaction> transactions = transactionRepository.findByPersonIdAndDateRange(personId, startDate, endDate, Pageable.unpaged()).getContent();
 
             BigDecimal totalIncome = transactions.stream()
                     .filter(t -> t.getTransactionType() == TransactionType.INCOME)
@@ -76,7 +77,7 @@ public class TransactionReportService {
         LocalDateTime startDate = DateRangeUtil.getStartOfYear(year);
         LocalDateTime endDate = DateRangeUtil.getEndOfYear(year);
 
-        List<Transaction> transactions = transactionRepository.findByPersonIdAndDateRange(personId, startDate, endDate);
+        List<Transaction> transactions = transactionRepository.findByPersonIdAndDateRange(personId, startDate, endDate, Pageable.unpaged()).getContent();
 
         BigDecimal totalIncome = transactions.stream()
                 .filter(t -> t.getTransactionType() == TransactionType.INCOME)
@@ -90,6 +91,6 @@ public class TransactionReportService {
 
         BigDecimal balance = totalIncome.subtract(totalExpenses);
 
-        return new TransactionSummaryDTO(totalIncome, totalExpenses, balance);
+        return new TransactionSummaryDTO(totalIncome, totalExpenses, balance, (long) transactions.size());
     }
 }
