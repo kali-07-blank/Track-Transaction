@@ -1,5 +1,4 @@
-/ AuthService.java - Authentication Service
-        package com.moneytracker.service;
+package com.moneytracker.service;
 
 import com.moneytracker.dto.LoginRequestDTO;
 import com.moneytracker.dto.LoginResponseDTO;

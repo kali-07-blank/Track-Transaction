@@ -1,5 +1,4 @@
-/ TransactionController.java
-        package com.moneytracker.controller;
+package com.moneytracker.controller;
 
 import com.moneytracker.dto.TransactionDTO;
 import com.moneytracker.dto.TransactionSummaryDTO;
