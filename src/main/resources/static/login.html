@@ -3,43 +3,202 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money Tracker Login</title>
+    <title>Login | Money Tracker</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="login-page">
 
+<!-- Background Animation -->
+<div class="background-animation">
+    <div class="floating-shape shape-1"></div>
+    <div class="floating-shape shape-2"></div>
+    <div class="floating-shape shape-3"></div>
+    <div class="floating-shape shape-4"></div>
+</div>
+
 <div class="login-container">
-    <h1>💰 Money Tracker Login</h1>
-    <form id="loginForm" novalidate>
+    <!-- Header -->
+    <div class="auth-header">
+        <div class="logo">💰</div>
+        <h1>Money Tracker</h1>
+        <p class="subtitle">Manage your transactions securely</p>
+    </div>
+
+    <!-- Login Form -->
+    <form id="loginForm" class="auth-form" novalidate>
         <!-- Username Field -->
         <div class="input-group">
-            <label for="username" class="sr-only">Username</label>
-            <i aria-hidden="true">👤</i>
-            <input type="text" id="username" name="username" placeholder="Enter username" required>
+            <label for="username" class="input-label">Username</label>
+            <div class="input-wrapper">
+                <div class="input-icon">👤</div>
+                <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        placeholder="Enter your username"
+                        required
+                        minlength="3"
+                        maxlength="30"
+                        autocomplete="username"
+                        class="auth-input"
+                >
+            </div>
+            <div class="input-error" id="usernameError"></div>
         </div>
 
         <!-- Password Field -->
         <div class="input-group">
-            <label for="password" class="sr-only">Password</label>
-            <i aria-hidden="true">🔒</i>
-            <input type="password" id="password" name="password" placeholder="Enter password" required>
+            <label for="password" class="input-label">Password</label>
+            <div class="input-wrapper">
+                <div class="input-icon">🔒</div>
+                <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        placeholder="Enter your password"
+                        required
+                        minlength="4"
+                        autocomplete="current-password"
+                        class="auth-input"
+                >
+                <button
+                        type="button"
+                        class="password-toggle"
+                        onclick="togglePassword('password')"
+                        aria-label="Toggle password visibility"
+                >
+                    👁️
+                </button>
+            </div>
+            <div class="input-error" id="passwordError"></div>
+        </div>
+
+        <!-- Remember Me -->
+        <div class="form-options">
+            <label class="checkbox-label">
+                <input type="checkbox" id="rememberMe" name="rememberMe">
+                <span class="checkmark"></span>
+                Remember me
+            </label>
         </div>
 
         <!-- Submit Button -->
-        <button type="submit">➡️ Login</button>
+        <button type="submit" class="auth-button" id="loginBtn">
+            <span class="btn-text">
+                <span class="btn-icon">➡️</span>
+                Login
+            </span>
+            <span class="btn-loading">
+                <div class="button-spinner"></div>
+                Logging in...
+            </span>
+        </button>
     </form>
 
-    <p style="margin-top: 15px; color: #fff;">
-        Don’t have an account?
-        <a href="register.html" style="color: #ffd700; text-decoration: underline;">Register here</a>
-    </p>
+    <!-- Alternative Actions -->
+    <div class="auth-footer">
+        <p>Don't have an account?</p>
+        <a href="register.html" class="link-button">
+            Create Account
+        </a>
+    </div>
+
+    <!-- Demo Credentials -->
+    <div class="demo-section">
+        <details class="demo-credentials">
+            <summary>Demo Credentials</summary>
+            <div class="demo-content">
+                <p><strong>Username:</strong> demo</p>
+                <p><strong>Password:</strong> demo123</p>
+                <button type="button" onclick="fillDemoCredentials()" class="demo-fill-btn">
+                    Use Demo Credentials
+                </button>
+            </div>
+        </details>
+    </div>
+
+    <!-- Security Notice -->
+    <div class="security-notice">
+        <div class="security-icon">🔐</div>
+        <p>Your data is encrypted and secure</p>
+    </div>
 </div>
 
-<!-- Notification -->
-<div id="notification" class="notification" role="alert" aria-live="assertive"></div>
+<!-- Enhanced Notification System -->
+<div id="notificationContainer" class="notification-container" role="alert" aria-live="polite">
+</div>
 
-<!-- JS -->
+<!-- Connection Status -->
+<div id="connectionStatus" class="connection-status">
+    <span class="status-indicator"></span>
+    <span class="status-text">Connected</span>
+</div>
+
+<!-- Keyboard Shortcuts Help -->
+<div class="keyboard-help" id="keyboardHelp">
+    <h4>Keyboard Shortcuts</h4>
+    <div class="shortcut-list">
+        <div class="shortcut">
+            <kbd>Tab</kbd>
+            <span>Navigate fields</span>
+        </div>
+        <div class="shortcut">
+            <kbd>Enter</kbd>
+            <span>Submit form</span>
+        </div>
+        <div class="shortcut">
+            <kbd>Ctrl</kbd> + <kbd>K</kbd>
+            <span>Fill demo credentials</span>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
 <script src="script.js"></script>
 
+<script>
+    // Auto-focus username field
+    document.addEventListener('DOMContentLoaded', () => {
+        const usernameField = document.getElementById('username');
+        if (usernameField) {
+            setTimeout(() => usernameField.focus(), 500);
+        }
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 'k') {
+            e.preventDefault();
+            fillDemoCredentials();
+        }
+    });
+
+    // Demo credentials filler
+    function fillDemoCredentials() {
+        document.getElementById('username').value = 'demo';
+        document.getElementById('password').value = 'demo123';
+        document.getElementById('username').dispatchEvent(new Event('input'));
+        document.getElementById('password').dispatchEvent(new Event('input'));
+    }
+
+    // Password visibility toggle
+    function togglePassword(fieldId) {
+        const field = document.getElementById(fieldId);
+        const toggle = field.nextElementSibling;
+
+        if (field.type === 'password') {
+            field.type = 'text';
+            toggle.textContent = '🙈';
+            toggle.setAttribute('aria-label', 'Hide password');
+        } else {
+            field.type = 'password';
+            toggle.textContent = '👁️';
+            toggle.setAttribute('aria-label', 'Show password');
+        }
+    }
+</script>
 </body>
 </html>
