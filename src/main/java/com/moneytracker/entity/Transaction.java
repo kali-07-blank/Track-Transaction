@@ -8,54 +8,43 @@ import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Objects;
-
+// Transaction.java
 @Entity
 @Table(name = "transactions")
 public class Transaction {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotNull(message = "Amount is required")
-    @DecimalMin(value = "0.01", message = "Amount must be greater than 0")
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal amount;
 
-    @NotBlank(message = "Description is required")
     @Column(nullable = false)
     private String description;
 
     @Enumerated(EnumType.STRING)
-    @NotNull(message = "Transaction type is required")
     @Column(name = "transaction_type", nullable = false)
     private TransactionType transactionType;
 
     @Column(name = "transaction_date", nullable = false)
     private LocalDateTime transactionDate;
 
+    @Column(length = 50)
     private String category;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "person_id", nullable = false)
-    @NotNull(message = "Person is required")
     private Person person;
 
-    // Constructors
-    public Transaction() {
-        this.transactionDate = LocalDateTime.now();
-    }
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
 
-    public Transaction(BigDecimal amount, String description, TransactionType transactionType, String category, Person person) {
-        this();
-        this.amount = amount;
-        this.description = description;
-        this.transactionType = transactionType;
-        this.category = category;
-        this.person = person;
-    }
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
-    // Getters and Setters
+    // Constructors, getters, and setters
     public Long getId() {
         return id;
     }

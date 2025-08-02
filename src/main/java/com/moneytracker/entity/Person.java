@@ -7,45 +7,37 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 import java.util.Objects;
 
+// Person.java
 @Entity
 @Table(name = "persons")
 public class Person {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "Username is required")
-    @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
-    @Column(unique = true, nullable = false)
+    @Column(unique = true, nullable = false, length = 50)
     private String username;
 
-    @NotBlank(message = "Email is required")
-    @Email(message = "Email should be valid")
     @Column(unique = true, nullable = false)
     private String email;
 
-    @NotBlank(message = "Password is required")
-    @Size(min = 6, message = "Password must be at least 6 characters")
     @Column(nullable = false)
     private String password;
 
-    @NotBlank(message = "Full name is required")
     @Column(name = "full_name", nullable = false)
     private String fullName;
 
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
     @OneToMany(mappedBy = "person", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Transaction> transactions;
-
-    // Constructors
-    public Person() {}
-
-    public Person(String username, String email, String password, String fullName) {
-        this.username = username;
-        this.email = email;
-        this.password = password;
-        this.fullName = fullName;
-    }
+    @JsonIgnore
+    private List<Transaction> transactions = new ArrayList<>();
 
     // Getters and Setters
     public Long getId() {

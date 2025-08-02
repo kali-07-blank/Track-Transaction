@@ -10,38 +10,28 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public class TransactionDTO {
-    private Long id;
-
     @NotNull(message = "Amount is required")
     @DecimalMin(value = "0.01", message = "Amount must be greater than 0")
+    @Digits(integer = 8, fraction = 2, message = "Amount format is invalid")
     private BigDecimal amount;
 
     @NotBlank(message = "Description is required")
+    @Size(max = 255, message = "Description cannot exceed 255 characters")
     private String description;
 
     @NotNull(message = "Transaction type is required")
     private TransactionType transactionType;
 
-    private LocalDateTime transactionDate;
-
+    @Size(max = 50, message = "Category cannot exceed 50 characters")
     private String category;
 
     @NotNull(message = "Person ID is required")
     private Long personId;
 
-    // Constructors
-    public TransactionDTO() {}
+    @PastOrPresent(message = "Transaction date cannot be in the future")
+    private LocalDateTime transactionDate;
 
-    public TransactionDTO(BigDecimal amount, String description, TransactionType transactionType, String category, Long personId) {
-        this.amount = amount;
-        this.description = description;
-        this.transactionType = transactionType;
-        this.category = category;
-        this.personId = personId;
-        this.transactionDate = LocalDateTime.now();
-    }
-
-    // Getters and Setters
+    // Getters and setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
