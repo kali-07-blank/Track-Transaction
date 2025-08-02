@@ -8,6 +8,8 @@ import java.time.LocalDateTime;
 
 public class TransactionDTO {
 
+    private Long id;
+
     @NotNull(message = "Amount is required")
     @DecimalMin(value = "0.01", message = "Amount must be greater than 0")
     @Digits(integer = 8, fraction = 2, message = "Amount format is invalid")
@@ -29,15 +31,26 @@ public class TransactionDTO {
     @PastOrPresent(message = "Transaction date cannot be in the future")
     private LocalDateTime transactionDate;
 
-    // Constructors, getters, and setters
     public TransactionDTO() {
         this.transactionDate = LocalDateTime.now();
     }
 
-    // Getters and setters
-    public void setId(Long id) {
+    public TransactionDTO(Long id, BigDecimal amount, String description,
+                          TransactionType transactionType, String category,
+                          Long personId, LocalDateTime transactionDate) {
         this.id = id;
+        this.amount = amount;
+        this.description = description;
+        this.transactionType = transactionType;
+        this.category = category;
+        this.personId = personId;
+        this.transactionDate = transactionDate != null ? transactionDate : LocalDateTime.now();
     }
+
+    // Getters and setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+
     public BigDecimal getAmount() { return amount; }
     public void setAmount(BigDecimal amount) { this.amount = amount; }
 

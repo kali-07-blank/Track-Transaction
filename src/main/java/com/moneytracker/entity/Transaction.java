@@ -1,15 +1,16 @@
 package com.moneytracker.entity;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.Objects;
+
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-// Transaction.java
+import jakarta.persistence.*;
+
+import com.moneytracker.enums.TransactionType;
+
 @Entity
 @Table(name = "transactions")
 public class Transaction {
@@ -23,7 +24,7 @@ public class Transaction {
     @Column(nullable = false)
     private String description;
 
-    @Enumerated(EnumType.STRING)
+    @Enumerated(EnumType.STRING) // ✅ Fix: use enums.TransactionType
     @Column(name = "transaction_type", nullable = false)
     private TransactionType transactionType;
 
@@ -45,11 +46,10 @@ public class Transaction {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // Constructors, getters, and setters
+    // Getters and Setters
     public Long getId() {
         return id;
     }
-
     public void setId(Long id) {
         this.id = id;
     }
@@ -57,7 +57,6 @@ public class Transaction {
     public BigDecimal getAmount() {
         return amount;
     }
-
     public void setAmount(BigDecimal amount) {
         this.amount = amount;
     }
@@ -65,7 +64,6 @@ public class Transaction {
     public String getDescription() {
         return description;
     }
-
     public void setDescription(String description) {
         this.description = description;
     }
@@ -73,7 +71,6 @@ public class Transaction {
     public TransactionType getTransactionType() {
         return transactionType;
     }
-
     public void setTransactionType(TransactionType transactionType) {
         this.transactionType = transactionType;
     }
@@ -81,7 +78,6 @@ public class Transaction {
     public LocalDateTime getTransactionDate() {
         return transactionDate;
     }
-
     public void setTransactionDate(LocalDateTime transactionDate) {
         this.transactionDate = transactionDate;
     }
@@ -89,7 +85,6 @@ public class Transaction {
     public String getCategory() {
         return category;
     }
-
     public void setCategory(String category) {
         this.category = category;
     }
@@ -97,7 +92,6 @@ public class Transaction {
     public Person getPerson() {
         return person;
     }
-
     public void setPerson(Person person) {
         this.person = person;
     }

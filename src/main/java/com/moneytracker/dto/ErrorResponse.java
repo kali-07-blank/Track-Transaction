@@ -3,6 +3,7 @@ package com.moneytracker.dto;
 import java.time.LocalDateTime;
 
 public class ErrorResponse {
+    private String error;
     private String message;
     private int status;
     private LocalDateTime timestamp;
@@ -12,14 +13,22 @@ public class ErrorResponse {
         this.timestamp = LocalDateTime.now();
     }
 
-    public ErrorResponse(String message, int status, String path) {
-        this();
-        this.message = message;
+    public ErrorResponse(int status, String error, String message, LocalDateTime timestamp) {
         this.status = status;
+        this.error = error;
+        this.message = message;
+        this.timestamp = timestamp != null ? timestamp : LocalDateTime.now();
+    }
+
+    public ErrorResponse(int status, String error, String message, String path, LocalDateTime timestamp) {
+        this(status, error, message, timestamp);
         this.path = path;
     }
 
     // Getters and Setters
+    public String getError() { return error; }
+    public void setError(String error) { this.error = error; }
+
     public String getMessage() { return message; }
     public void setMessage(String message) { this.message = message; }
 

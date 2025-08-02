@@ -1,7 +1,5 @@
 package com.moneytracker.controller;
 
-import com.moneytracker.dto.LoginRequestDTO;
-import com.moneytracker.dto.LoginResponseDTO;
 import com.moneytracker.dto.PersonDTO;
 import com.moneytracker.service.PersonService;
 import jakarta.validation.Valid;
@@ -30,43 +28,17 @@ public class PersonController {
         return new ResponseEntity<>(createdPerson, HttpStatus.CREATED);
     }
 
-    @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> loginPerson(@Valid @RequestBody LoginRequestDTO loginRequest) {
-        boolean isAuthenticated = personService.authenticatePerson(
-                loginRequest.getIdentifier(),
-                loginRequest.getPassword()
-        );
-
-        if (isAuthenticated) {
-            PersonDTO person = personService.getPersonByUsername(loginRequest.getIdentifier());
-            if (person == null) {
-                // Try by email if username lookup failed
-                try {
-                    person = personService.getPersonByUsername(loginRequest.getIdentifier());
-                } catch (Exception e) {
-                    // Handle case where identifier might be email
-                }
-            }
-
-            LoginResponseDTO response = new LoginResponseDTO(true, "Login successful", person);
-            return ResponseEntity.ok(response);
-        } else {
-            LoginResponseDTO response = new LoginResponseDTO(false, "Invalid credentials", null);
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
-        }
-    }
-
     @GetMapping("/{id}")
     public ResponseEntity<PersonDTO> getPersonById(@PathVariable Long id) {
-        PersonDTO person = personService.getPersonById(id);
+        PersonDTO person = personService.getPersonById(id)
+                .orElseThrow(() -> new RuntimeException("Person not found with id: " + id));
         return ResponseEntity.ok(person);
     }
 
-
-
     @GetMapping("/username/{username}")
     public ResponseEntity<PersonDTO> getPersonByUsername(@PathVariable String username) {
-        PersonDTO person = personService.getPersonByUsername(username);
+        PersonDTO person = personService.getPersonByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Person not found with username: " + username));
         return ResponseEntity.ok(person);
     }
 

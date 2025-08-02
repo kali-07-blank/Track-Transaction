@@ -1,11 +1,14 @@
 /home/gsharp/Music/money-manager/src/main/java/com/moneytracker/dto/ValidationErrorResponse.java
 /home/gsharp/Music/money-manager/src/main/java/com/moneytracker/controller/PersonController.java
+/home/gsharp/Music/money-manager/src/main/java/com/moneytracker/service/PersonService.java
 /home/gsharp/Music/money-manager/src/main/java/com/moneytracker/service/PersonServiceImpl.java
 /home/gsharp/Music/money-manager/src/main/java/com/moneytracker/util/JwtUtil.java
 /home/gsharp/Music/money-manager/src/main/java/com/moneytracker/service/TransactionReportService.java
 /home/gsharp/Music/money-manager/src/main/java/com/moneytracker/Security/JwtRequestFilter.java
+/home/gsharp/Music/money-manager/src/main/java/com/moneytracker/util/PasswordHashGenerator.java
 /home/gsharp/Music/money-manager/src/main/java/com/moneytracker/dto/LoginResponseDTO.java
 /home/gsharp/Music/money-manager/src/main/java/com/moneytracker/entity/Transaction.java
+/home/gsharp/Music/money-manager/src/main/java/com/moneytracker/dto/ErrorResponse.java
 /home/gsharp/Music/money-manager/src/main/java/com/moneytracker/repository/PersonRepository.java
 /home/gsharp/Music/money-manager/src/main/java/com/moneytracker/service/TransactionService.java
 /home/gsharp/Music/money-manager/src/main/java/com/moneytracker/service/UserDetailsServiceImpl.java
@@ -13,6 +16,7 @@
 /home/gsharp/Music/money-manager/src/main/java/com/moneytracker/repository/TransactionRepository.java
 /home/gsharp/Music/money-manager/src/main/java/com/moneytracker/entity/Person.java
 /home/gsharp/Music/money-manager/src/main/java/com/moneytracker/exception/DuplicateResourceException.java
+/home/gsharp/Music/money-manager/src/main/java/com/moneytracker/controller/HomeController.java
 /home/gsharp/Music/money-manager/src/main/java/com/moneytracker/dto/TransactionDTO.java
 /home/gsharp/Music/money-manager/src/main/java/com/moneytracker/dto/LoginRequestDTO.java
 /home/gsharp/Music/money-manager/src/main/java/com/moneytracker/config/SecurityConfig.java

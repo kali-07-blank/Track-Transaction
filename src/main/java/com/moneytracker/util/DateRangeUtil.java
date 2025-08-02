@@ -1,4 +1,3 @@
-// DateRangeUtil.java - Utility for Date Operations
 package com.moneytracker.util;
 
 import java.time.LocalDateTime;
@@ -12,15 +11,15 @@ public class DateRangeUtil {
     }
 
     public static LocalDateTime getEndOfMonth(int year, int month) {
-        return YearMonth.of(year, month).atEndOfMonth().atTime(23, 59, 59);
+        return YearMonth.of(year, month).atEndOfMonth().atTime(23, 59, 59, 999_999_999);
     }
 
     public static LocalDateTime getStartOfYear(int year) {
-        return LocalDateTime.of(year, 1, 1, 0, 0, 0);
+        return LocalDateTime.of(year, 1, 1, 0, 0, 0, 0);
     }
 
     public static LocalDateTime getEndOfYear(int year) {
-        return LocalDateTime.of(year, 12, 31, 23, 59, 59);
+        return LocalDateTime.of(year, 12, 31, 23, 59, 59, 999_999_999);
     }
 
     public static LocalDateTime getStartOfWeek(LocalDateTime date) {
@@ -30,6 +29,6 @@ public class DateRangeUtil {
 
     public static LocalDateTime getEndOfWeek(LocalDateTime date) {
         return date.with(TemporalAdjusters.nextOrSame(java.time.DayOfWeek.SUNDAY))
-                .withHour(23).withMinute(59).withSecond(59).withNano(999999999);
+                .withHour(23).withMinute(59).withSecond(59).withNano(999_999_999);
     }
 }

@@ -3,6 +3,7 @@ package com.moneytracker.controller;
 import com.moneytracker.dto.LoginRequestDTO;
 import com.moneytracker.dto.LoginResponseDTO;
 import com.moneytracker.dto.PersonDTO;
+import com.moneytracker.exception.ResourceNotFoundException;
 import com.moneytracker.service.AuthService;
 import com.moneytracker.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +13,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.bind.annotation.*;
-import javax.validation.Valid;
 
 import jakarta.validation.Valid;
 
@@ -38,22 +38,35 @@ public class AuthController {
         PersonDTO registeredPerson = authService.register(personDTO);
         return ResponseEntity.ok(registeredPerson);
     }
+
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@Valid @RequestBody LoginRequestDTO loginRequest) {
+        // Authenticate the user
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         loginRequest.getIdentifier(),
                         loginRequest.getPassword())
         );
 
+        // Load user details for JWT generation
         UserDetails userDetails = userDetailsService.loadUserByUsername(loginRequest.getIdentifier());
         String token = jwtUtil.generateToken(userDetails);
 
-        LoginResponseDTO response = new LoginResponseDTO();
-        response.setToken(token);
-        response.setUsername(userDetails.getUsername());
+        // Fetch PersonDTO (username or email)
+        PersonDTO person = authService.getPersonByIdentifier(loginRequest.getIdentifier())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Person not found with identifier: " + loginRequest.getIdentifier()
+                ));
+
+        // Build response
+        LoginResponseDTO response = new LoginResponseDTO(
+                true,
+                "Login successful",
+                token,
+                userDetails.getUsername(),
+                person
+        );
 
         return ResponseEntity.ok(response);
     }
-
 }

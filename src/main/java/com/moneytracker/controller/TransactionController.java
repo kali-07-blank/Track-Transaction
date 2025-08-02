@@ -6,7 +6,6 @@ import com.moneytracker.enums.TransactionType;
 import com.moneytracker.service.TransactionService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -29,7 +28,7 @@ public class TransactionController {
     @PostMapping
     public ResponseEntity<TransactionDTO> createTransaction(@Valid @RequestBody TransactionDTO transactionDTO) {
         TransactionDTO createdTransaction = transactionService.createTransaction(transactionDTO);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdTransaction);
+        return new ResponseEntity<>(createdTransaction, HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
@@ -39,46 +38,34 @@ public class TransactionController {
     }
 
     @GetMapping("/person/{personId}")
-    public ResponseEntity<List<TransactionDTO>> getTransactionsByPersonId(@PathVariable Long personId) {
+    public ResponseEntity<List<TransactionDTO>> getTransactionsByPerson(@PathVariable Long personId) {
         List<TransactionDTO> transactions = transactionService.getTransactionsByPersonId(personId);
         return ResponseEntity.ok(transactions);
     }
 
     @GetMapping("/person/{personId}/type/{type}")
-    public ResponseEntity<List<TransactionDTO>> getTransactionsByPersonIdAndType(
-            @PathVariable Long personId,
-            @PathVariable TransactionType type) {
+    public ResponseEntity<List<TransactionDTO>> getTransactionsByType(@PathVariable Long personId, @PathVariable TransactionType type) {
         List<TransactionDTO> transactions = transactionService.getTransactionsByPersonIdAndType(personId, type);
         return ResponseEntity.ok(transactions);
     }
 
     @GetMapping("/person/{personId}/category/{category}")
-    public ResponseEntity<List<TransactionDTO>> getTransactionsByPersonIdAndCategory(
-            @PathVariable Long personId,
-            @PathVariable String category) {
+    public ResponseEntity<List<TransactionDTO>> getTransactionsByCategory(@PathVariable Long personId, @PathVariable String category) {
         List<TransactionDTO> transactions = transactionService.getTransactionsByPersonIdAndCategory(personId, category);
         return ResponseEntity.ok(transactions);
     }
 
-    @GetMapping("/person/{personId}/date-range")
+    @GetMapping("/person/{personId}/daterange")
     public ResponseEntity<List<TransactionDTO>> getTransactionsByDateRange(
             @PathVariable Long personId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
-        List<TransactionDTO> transactions = transactionService.getTransactionsByDateRange(personId, startDate, endDate);
+            @RequestParam("startDate") String startDate,
+            @RequestParam("endDate") String endDate) {
+
+        LocalDateTime start = LocalDateTime.parse(startDate);
+        LocalDateTime end = LocalDateTime.parse(endDate);
+
+        List<TransactionDTO> transactions = transactionService.getTransactionsByDateRange(personId, start, end);
         return ResponseEntity.ok(transactions);
-    }
-
-    @GetMapping("/person/{personId}/summary")
-    public ResponseEntity<TransactionSummaryDTO> getTransactionSummary(@PathVariable Long personId) {
-        TransactionSummaryDTO summary = transactionService.getTransactionSummary(personId);
-        return ResponseEntity.ok(summary);
-    }
-
-    @GetMapping("/person/{personId}/categories")
-    public ResponseEntity<List<String>> getCategoriesByPersonId(@PathVariable Long personId) {
-        List<String> categories = transactionService.getCategoriesByPersonId(personId);
-        return ResponseEntity.ok(categories);
     }
 
     @PutMapping("/{id}")
@@ -92,5 +79,11 @@ public class TransactionController {
     public ResponseEntity<Void> deleteTransaction(@PathVariable Long id) {
         transactionService.deleteTransaction(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/person/{personId}/summary")
+    public ResponseEntity<TransactionSummaryDTO> getTransactionSummary(@PathVariable Long personId) {
+        TransactionSummaryDTO summary = transactionService.getTransactionSummary(personId);
+        return ResponseEntity.ok(summary);
     }
 }

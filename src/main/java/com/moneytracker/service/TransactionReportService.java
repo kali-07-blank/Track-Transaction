@@ -1,6 +1,5 @@
 package com.moneytracker.service;
 
-import com.moneytracker.dto.TransactionDTO;
 import com.moneytracker.dto.TransactionSummaryDTO;
 import com.moneytracker.entity.Transaction;
 import com.moneytracker.enums.TransactionType;
@@ -26,6 +25,9 @@ public class TransactionReportService {
         this.transactionRepository = transactionRepository;
     }
 
+    /**
+     * Returns category-wise total expenses for a given person, year, and month.
+     */
     public Map<String, BigDecimal> getCategoryWiseExpenses(Long personId, int year, int month) {
         LocalDateTime startDate = DateRangeUtil.getStartOfMonth(year, month);
         LocalDateTime endDate = DateRangeUtil.getEndOfMonth(year, month);
@@ -37,10 +39,16 @@ public class TransactionReportService {
                 .filter(t -> t.getCategory() != null)
                 .collect(Collectors.groupingBy(
                         Transaction::getCategory,
-                        Collectors.reducing(BigDecimal.ZERO, Transaction::getAmount, BigDecimal::add)
+                        Collectors.mapping(
+                                t -> t.getAmount() != null ? t.getAmount() : BigDecimal.ZERO,
+                                Collectors.reducing(BigDecimal.ZERO, BigDecimal::add)
+                        )
                 ));
     }
 
+    /**
+     * Returns monthly income totals for a given year.
+     */
     public Map<String, BigDecimal> getMonthlyIncome(Long personId, int year) {
         Map<String, BigDecimal> monthlyIncome = new HashMap<>();
 
@@ -52,7 +60,7 @@ public class TransactionReportService {
 
             BigDecimal totalIncome = transactions.stream()
                     .filter(t -> t.getTransactionType() == TransactionType.INCOME)
-                    .map(Transaction::getAmount)
+                    .map(t -> t.getAmount() != null ? t.getAmount() : BigDecimal.ZERO)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
             monthlyIncome.put(String.format("%04d-%02d", year, month), totalIncome);
@@ -61,6 +69,9 @@ public class TransactionReportService {
         return monthlyIncome;
     }
 
+    /**
+     * Returns yearly summary of income, expenses, and balance.
+     */
     public TransactionSummaryDTO getYearlySummary(Long personId, int year) {
         LocalDateTime startDate = DateRangeUtil.getStartOfYear(year);
         LocalDateTime endDate = DateRangeUtil.getEndOfYear(year);
@@ -69,12 +80,12 @@ public class TransactionReportService {
 
         BigDecimal totalIncome = transactions.stream()
                 .filter(t -> t.getTransactionType() == TransactionType.INCOME)
-                .map(Transaction::getAmount)
+                .map(t -> t.getAmount() != null ? t.getAmount() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal totalExpenses = transactions.stream()
                 .filter(t -> t.getTransactionType() == TransactionType.EXPENSE)
-                .map(Transaction::getAmount)
+                .map(t -> t.getAmount() != null ? t.getAmount() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal balance = totalIncome.subtract(totalExpenses);

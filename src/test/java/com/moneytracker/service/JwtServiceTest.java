@@ -1,5 +1,4 @@
-/ JwtServiceTest.java
-        package com.moneytracker.service;
+package com.moneytracker.service;
 
 import com.moneytracker.dto.PersonDTO;
 import com.moneytracker.entity.Person;
@@ -22,7 +21,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class PersonServiceTest {
+class JwtServiceTest {   // ✅ fixed class name
 
     @Mock
     private PersonRepository personRepository;
@@ -39,6 +38,7 @@ class PersonServiceTest {
     @BeforeEach
     void setUp() {
         personDTO = new PersonDTO();
+        personDTO.setId(1L); // ✅ ensure ID is set for consistency with DTO
         personDTO.setUsername("testuser");
         personDTO.setEmail("test@example.com");
         personDTO.setPassword("password123");
@@ -54,45 +54,37 @@ class PersonServiceTest {
 
     @Test
     void createPerson_Success() {
-        // Given
         when(personRepository.existsByUsername(anyString())).thenReturn(false);
         when(personRepository.existsByEmail(anyString())).thenReturn(false);
         when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
         when(personRepository.save(any(Person.class))).thenReturn(person);
 
-        // When
         PersonDTO result = personService.createPerson(personDTO);
 
-        // Then
         assertNotNull(result);
         assertEquals("testuser", result.getUsername());
         assertEquals("test@example.com", result.getEmail());
         assertEquals("Test User", result.getFullName());
+        assertEquals(1L, result.getId());
         verify(personRepository).save(any(Person.class));
     }
 
     @Test
     void createPerson_DuplicateUsername() {
-        // Given
         when(personRepository.existsByUsername(anyString())).thenReturn(true);
 
-        // When & Then
-        assertThrows(DuplicateResourceException.class, () -> {
-            personService.createPerson(personDTO);
-        });
+        assertThrows(DuplicateResourceException.class, () -> personService.createPerson(personDTO));
 
         verify(personRepository, never()).save(any(Person.class));
     }
 
     @Test
     void getPersonById_Success() {
-        // Given
         when(personRepository.findById(1L)).thenReturn(Optional.of(person));
 
-        // When
-        PersonDTO result = personService.getPersonById(1L);
+        PersonDTO result = personService.getPersonById(1L)
+                .orElseThrow(() -> new ResourceNotFoundException("Person not found"));
 
-        // Then
         assertNotNull(result);
         assertEquals(1L, result.getId());
         assertEquals("testuser", result.getUsername());
@@ -100,38 +92,30 @@ class PersonServiceTest {
 
     @Test
     void getPersonById_NotFound() {
-        // Given
         when(personRepository.findById(1L)).thenReturn(Optional.empty());
 
-        // When & Then
-        assertThrows(ResourceNotFoundException.class, () -> {
-            personService.getPersonById(1L);
-        });
+        assertThrows(ResourceNotFoundException.class, () ->
+                personService.getPersonById(1L).orElseThrow(() ->
+                        new ResourceNotFoundException("Person not found")));
     }
 
     @Test
     void authenticatePerson_Success() {
-        // Given
         when(personRepository.findByUsernameOrEmail(anyString())).thenReturn(Optional.of(person));
         when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
 
-        // When
         boolean result = personService.authenticatePerson("testuser", "password123");
 
-        // Then
         assertTrue(result);
     }
 
     @Test
     void authenticatePerson_InvalidCredentials() {
-        // Given
         when(personRepository.findByUsernameOrEmail(anyString())).thenReturn(Optional.of(person));
         when(passwordEncoder.matches(anyString(), anyString())).thenReturn(false);
 
-        // When
         boolean result = personService.authenticatePerson("testuser", "wrongpassword");
 
-        // Then
         assertFalse(result);
     }
 }

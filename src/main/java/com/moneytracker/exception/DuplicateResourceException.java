@@ -1,4 +1,3 @@
-// DuplicateResourceException.java
 package com.moneytracker.exception;
 
 public class DuplicateResourceException extends RuntimeException {

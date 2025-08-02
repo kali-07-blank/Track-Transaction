@@ -1,5 +1,4 @@
-/ PeopleApiSecurityTest.java
-        package com.moneytracker.controller;
+package com.moneytracker.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.moneytracker.dto.PersonDTO;
@@ -16,6 +15,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(PersonController.class)
@@ -33,9 +33,17 @@ class PeopleApiSecurityTest {
     @Test
     void registerPerson_WithoutAuthentication_ShouldSucceed() throws Exception {
         // Given
-        PersonDTO personDTO = new PersonDTO("testuser", "test@example.com", "password123", "Test User");
-        PersonDTO savedPersonDTO = new PersonDTO("testuser", "test@example.com", null, "Test User");
+        PersonDTO personDTO = new PersonDTO();
+        personDTO.setUsername("testuser");
+        personDTO.setEmail("test@example.com");
+        personDTO.setPassword("password123");
+        personDTO.setFullName("Test User");
+
+        PersonDTO savedPersonDTO = new PersonDTO();
         savedPersonDTO.setId(1L);
+        savedPersonDTO.setUsername("testuser");
+        savedPersonDTO.setEmail("test@example.com");
+        savedPersonDTO.setFullName("Test User");
 
         when(personService.createPerson(any(PersonDTO.class))).thenReturn(savedPersonDTO);
 
@@ -54,15 +62,18 @@ class PeopleApiSecurityTest {
     @WithMockUser
     void getPersonById_WithAuthentication_ShouldSucceed() throws Exception {
         // Given
-        PersonDTO personDTO = new PersonDTO("testuser", "test@example.com", null, "Test User");
+        PersonDTO personDTO = new PersonDTO();
         personDTO.setId(1L);
+        personDTO.setUsername("testuser");
+        personDTO.setEmail("test@example.com");
+        personDTO.setFullName("Test User");
 
-        when(personService.getPersonById(1L)).thenReturn(personDTO);
+        when(personService.getPersonById(1L)).thenReturn(java.util.Optional.of(personDTO));
 
         // When & Then
-        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/persons/1"))
+        mockMvc.perform(get("/api/persons/1"))
                 .andExpect(status().isOk())
-                .andExpected(jsonPath("$.id").value(1))
-                .andExpected(jsonPath("$.username").value("testuser"));
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.username").value("testuser"));
     }
 }

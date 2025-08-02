@@ -1,4 +1,3 @@
-// TransactionSummaryDTO.java
 package com.moneytracker.dto;
 
 import java.math.BigDecimal;
@@ -16,7 +15,6 @@ public class TransactionSummaryDTO {
         this.balance = balance;
     }
 
-    // Getters and Setters
     public BigDecimal getTotalIncome() { return totalIncome; }
     public void setTotalIncome(BigDecimal totalIncome) { this.totalIncome = totalIncome; }
 

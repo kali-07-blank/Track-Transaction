@@ -15,6 +15,11 @@ public class TransactionValidator {
     public List<String> validateTransaction(TransactionDTO transactionDTO) {
         List<String> errors = new ArrayList<>();
 
+        if (transactionDTO == null) {
+            errors.add("Transaction data is missing");
+            return errors;
+        }
+
         // Amount validation
         if (transactionDTO.getAmount() == null) {
             errors.add("Amount is required");
@@ -39,9 +44,11 @@ public class TransactionValidator {
         // Category validation (optional but if provided, should be valid)
         if (transactionDTO.getCategory() != null && transactionDTO.getCategory().length() > 50) {
             errors.add("Category cannot exceed 50 characters");
+        } else if (transactionDTO.getCategory() != null && !isValidCategory(transactionDTO.getCategory())) {
+            errors.add("Invalid category provided");
         }
 
-        // Business rule validations
+        // Business rule: Large transfer validation
         if (transactionDTO.getTransactionType() == TransactionType.TRANSFER &&
                 transactionDTO.getAmount() != null &&
                 transactionDTO.getAmount().compareTo(new BigDecimal("100000")) > 0) {

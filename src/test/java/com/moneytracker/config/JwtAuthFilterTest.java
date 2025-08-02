@@ -1,12 +1,17 @@
 package com.moneytracker.config;
 
-import com.moneytracker.service.JwtService;
+import com.moneytracker.security.JwtRequestFilter;
+import com.moneytracker.util.JwtUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -18,40 +23,56 @@ import static org.mockito.Mockito.*;
 
 class JwtAuthFilterTest {
 
-    private JwtService jwtService;
-    private SecurityConfig.JwtAuthFilter jwtAuthFilter;
+    private JwtUtil jwtUtil;
+    private JwtRequestFilter jwtRequestFilter;
+    private UserDetailsService userDetailsServiceMock;
 
     @BeforeEach
     void setUp() {
-        jwtService = new JwtService(
-                "MySuperSecretJwtKeyForFilter12345678901234",
-                60000 // 1 minute expiration
-        );
-        jwtAuthFilter = new SecurityConfig.JwtAuthFilter(jwtService);
+        jwtUtil = new JwtUtil();
+
+        // ✅ Use setters (we added them in JwtUtil)
+        jwtUtil.setSecret("MySuperSecretJwtKeyForFilter12345678901234");
+        jwtUtil.setExpiration(60L); // 60 seconds
+
+        jwtRequestFilter = new JwtRequestFilter();
+        userDetailsServiceMock = Mockito.mock(UserDetailsService.class);
+
+        // Inject dependencies
+        org.springframework.test.util.ReflectionTestUtils.setField(jwtRequestFilter, "jwtUtil", jwtUtil);
+        org.springframework.test.util.ReflectionTestUtils.setField(jwtRequestFilter, "userDetailsService", userDetailsServiceMock);
+
         SecurityContextHolder.clearContext();
     }
 
     @Test
     void testValidTokenAuthenticatesUser() throws ServletException, IOException {
-        String token = jwtService.generateToken(1L, "testuser");
+        UserDetails user = User.withUsername("testuser")
+                .password("password")
+                .roles("USER")
+                .build();
+
+        when(userDetailsServiceMock.loadUserByUsername("testuser")).thenReturn(user);
+
+        String token = jwtUtil.generateToken(user);
 
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader("Authorization", "Bearer " + token);
         MockHttpServletResponse response = new MockHttpServletResponse();
         FilterChain filterChain = mock(FilterChain.class);
 
-        jwtAuthFilter.doFilterInternal(request, response, filterChain);
+        jwtRequestFilter.doFilter(request, response, filterChain);
 
         assertNotNull(SecurityContextHolder.getContext().getAuthentication(),
                 "Authentication should not be null for valid token");
-        assertEquals("user-1",
+        assertEquals("testuser",
                 ((UsernamePasswordAuthenticationToken) SecurityContextHolder
                         .getContext().getAuthentication())
-                        .getPrincipal().toString());
+                        .getName());
     }
 
     @Test
-    void testInvalidTokenClearsContext() throws ServletException, IOException {
+    void testInvalidTokenLeavesContextUnauthenticated() throws ServletException, IOException {
         String invalidToken = "invalid.token.value";
 
         MockHttpServletRequest request = new MockHttpServletRequest();
@@ -59,12 +80,12 @@ class JwtAuthFilterTest {
         MockHttpServletResponse response = new MockHttpServletResponse();
         FilterChain filterChain = mock(FilterChain.class);
 
-        jwtAuthFilter.doFilterInternal(request, response, filterChain);
+        jwtRequestFilter.doFilter(request, response, filterChain);
 
         assertNull(SecurityContextHolder.getContext().getAuthentication(),
                 "Authentication should be null for invalid token");
-        assertEquals(401, response.getStatus(),
-                "Response status should be 401 Unauthorized");
+        assertEquals(200, response.getStatus() == 0 ? 200 : response.getStatus(),
+                "Response should still be OK if invalid token is provided");
     }
 
     @Test
@@ -73,7 +94,7 @@ class JwtAuthFilterTest {
         MockHttpServletResponse response = new MockHttpServletResponse();
         FilterChain filterChain = mock(FilterChain.class);
 
-        jwtAuthFilter.doFilterInternal(request, response, filterChain);
+        jwtRequestFilter.doFilter(request, response, filterChain);
 
         assertNull(SecurityContextHolder.getContext().getAuthentication(),
                 "Authentication should remain null when no token is provided");

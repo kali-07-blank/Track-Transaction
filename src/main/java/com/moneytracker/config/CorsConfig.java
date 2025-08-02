@@ -1,4 +1,3 @@
-// CorsConfig.java
 package com.moneytracker.config;
 
 import org.springframework.context.annotation.Bean;
@@ -14,11 +13,11 @@ public class CorsConfig {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/api/**")
-                        .allowedOriginPatterns("*")
+                registry.addMapping("/**")
+                        .allowedOriginPatterns("*") // ✅ correct usage for wildcard with credentials
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
-                        .allowCredentials(true);
+                        .allowCredentials(true); // ✅ keep at the end
             }
         };
     }

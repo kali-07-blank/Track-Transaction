@@ -1,10 +1,10 @@
-// LoginRequestDTO.java
 package com.moneytracker.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
 public class LoginRequestDTO {
-    @NotBlank(message = "Identifier (username or email) is required")
+
+    @NotBlank(message = "Identifier (username/email) is required")
     private String identifier;
 
     @NotBlank(message = "Password is required")
