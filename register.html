@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register | Money Tracker</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="register-page">
+
+<!-- Background Animation -->
+<div class="background-animation">
+    <div class="floating-shape shape-1"></div>
+    <div class="floating-shape shape-2"></div>
+    <div class="floating-shape shape-3"></div>
+    <div class="floating-shape shape-4"></div>
+</div>
+
+<div class="register-container">
+    <!-- Header -->
+    <div class="auth-header">
+        <div class="logo">💰</div>
+        <h1>Money Tracker</h1>
+        <p class="subtitle">Create your account to start tracking</p>
+    </div>
+
+    <!-- Registration Form -->
+    <form id="registerForm" class="auth-form" novalidate>
+        <!-- Username Field -->
+        <div class="input-group">
+            <label for="regUsername" class="input-label">Username</label>
+            <div class="input-wrapper">
+                <div class="input-icon">👤</div>
+                <input
+                        type="text"
+                        id="regUsername"
+                        name="username"
+                        placeholder="Choose a username"
+                        required
+                        minlength="3"
+                        maxlength="30"
+                        autocomplete="username"
+                        class="auth-input"
+                >
+            </div>
+            <div class="input-error" id="regUsernameError"></div>
+        </div>
+
+        <!-- Email Field -->
+        <div class="input-group">
+            <label for="regEmail" class="input-label">Email Address</label>
+            <div class="input-wrapper">
+                <div class="input-icon">📧</div>
+                <input
+                        type="email"
+                        id="regEmail"
+                        name="email"
+                        placeholder="Enter your email"
+                        required
+                        autocomplete="email"
+                        class="auth-input"
+                >
+            </div>
+            <div class="input-error" id="regEmailError"></div>
+        </div>
+
+        <!-- Password Field -->
+        <div class="input-group">
+            <label for="regPassword" class="input-label">Password</label>
+            <div class="input-wrapper">
+                <div class="input-icon">🔒</div>
+                <input
+                        type="password"
+                        id="regPassword"
+                        name="password"
+                        placeholder="Create a password"
+                        required
+                        minlength="4"
+                        autocomplete="new-password"
+                        class="auth-input"
+                >
+                <button
+                        type="button"
+                        class="password-toggle"
+                        onclick="togglePassword('regPassword')"
+                        aria-label="Toggle password visibility"
+                >
+                    👁️
+                </button>
+            </div>
+            <div class="input-error" id="regPasswordError"></div>
+        </div>
+
+        <!-- Confirm Password Field -->
+        <div class="input-group">
+            <label for="regPasswordConfirm" class="input-label">Confirm Password</label>
+            <div class="input-wrapper">
+                <div class="input-icon">🔒</div>
+                <input
+                        type="password"
+                        id="regPasswordConfirm"
+                        name="passwordConfirm"
+                        placeholder="Confirm your password"
+                        required
+                        minlength="4"
+                        autocomplete="new-password"
+                        class="auth-input"
+                >
+                <button
+                        type="button"
+                        class="password-toggle"
+                        onclick="togglePassword('regPasswordConfirm')"
+                        aria-label="Toggle password visibility"
+                >
+                    👁️
+                </button>
+            </div>
+            <div class="input-error" id="regPasswordConfirmError"></div>
+        </div>
+
+        <!-- Terms Agreement -->
+        <div class="form-options">
+            <label class="checkbox-label">
+                <input type="checkbox" id="agreeTerms" name="agreeTerms" required>
+                <span class="checkmark"></span>
+                I agree to the <a href="#" class="terms-link">Terms of Service</a>
+            </label>
+            <div class="input-error" id="agreeTermsError"></div>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="auth-button" id="registerBtn">
+            <span class="btn-text">
+                <span class="btn-icon">✨</span>
+                Create Account
+            </span>
+            <span class="btn-loading">
+                <div class="button-spinner"></div>
+                Creating account...
+            </span>
+        </button>
+    </form>
+
+    <!-- Alternative Actions -->
+    <div class="auth-footer">
+        <p>Already have an account?</p>
+        <a href="login.html" class="link-button">
+            Login Here
+        </a>
+    </div>
+
+    <!-- Password Requirements -->
+    <div class="password-requirements">
+        <details class="requirements-details">
+            <summary>Password Requirements</summary>
+            <div class="requirements-content">
+                <ul class="requirements-list">
+                    <li>At least 4 characters long</li>
+                    <li>Mix of letters and numbers recommended</li>
+                    <li>Avoid common passwords</li>
+                </ul>
+            </div>
+        </details>
+    </div>
+
+    <!-- Security Notice -->
+    <div class="security-notice">
+        <div class="security-icon">🔐</div>
+        <p>Your data is encrypted and secure</p>
+    </div>
+</div>
+
+<!-- Enhanced Notification System -->
+<div id="notificationContainer" class="notification-container" role="alert" aria-live="polite">
+</div>
+
+<!-- Connection Status -->
+<div id="connectionStatus" class="connection-status">
+    <span class="status-indicator"></span>
+    <span class="status-text">Connected</span>
+</div>
+
+<!-- Keyboard Shortcuts Help -->
+<div class="keyboard-help" id="keyboardHelp">
+    <h4>Keyboard Shortcuts</h4>
+    <div class="shortcut-list">
+        <div class="shortcut">
+            <kbd>Tab</kbd>
+            <span>Navigate fields</span>
+        </div>
+        <div class="shortcut">
+            <kbd>Enter</kbd>
+            <span>Submit form</span>
+        </div>
+        <div class="shortcut">
+            <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd>
+            <span>Toggle password visibility</span>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="script.js"></script>
+
+<script>
+    // Auto-focus username field
+    document.addEventListener('DOMContentLoaded', () => {
+        const usernameField = document.getElementById('regUsername');
+        if (usernameField) {
+            setTimeout(() => usernameField.focus(), 500);
+        }
+    });
+
+    // Password visibility toggle
+    function togglePassword(fieldId) {
+        const field = document.getElementById(fieldId);
+        const toggle = field.nextElementSibling;
+
+        if (field.type === 'password') {
+            field.type = 'text';
+            toggle.textContent = '🙈';
+            toggle.setAttribute('aria-label', 'Hide password');
+        } else {
+            field.type = 'password';
+            toggle.textContent = '👁️';
+            toggle.setAttribute('aria-label', 'Show password');
+        }
+    }
+
+    // Real-time password confirmation validation
+    document.getElementById('regPasswordConfirm')?.addEventListener('input', function() {
+        const password = document.getElementById('regPassword').value;
+        const confirmPassword = this.value;
+        const errorDiv = document.getElementById('regPasswordConfirmError');
+
+        if (confirmPassword && password !== confirmPassword) {
+            errorDiv.textContent = 'Passwords do not match';
+            errorDiv.style.display = 'block';
+            this.classList.add('error');
+        } else {
+            errorDiv.textContent = '';
+            errorDiv.style.display = 'none';
+            this.classList.remove('error');
+        }
+    });
+
+    // Username validation
+    document.getElementById('regUsername')?.addEventListener('input', function() {
+        const username = this.value;
+        const errorDiv = document.getElementById('regUsernameError');
+
+        if (username.length > 0 && username.length < 3) {
+            errorDiv.textContent = 'Username must be at least 3 characters';
+            errorDiv.style.display = 'block';
+            this.classList.add('error');
+        } else if (username.length > 30) {
+            errorDiv.textContent = 'Username must be less than 30 characters';
+            errorDiv.style.display = 'block';
+            this.classList.add('error');
+        } else if (username && !/^[a-zA-Z0-9_]+$/.test(username)) {
+            errorDiv.textContent = 'Username can only contain letters, numbers, and underscores';
+            errorDiv.style.display = 'block';
+            this.classList.add('error');
+        } else {
+            errorDiv.textContent = '';
+            errorDiv.style.display = 'none';
+            this.classList.remove('error');
+        }
+    });
+
+    // Email validation
+    document.getElementById('regEmail')?.addEventListener('input', function() {
+        const email = this.value;
+        const errorDiv = document.getElementById('regEmailError');
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (email && !emailPattern.test(email)) {
+            errorDiv.textContent = 'Please enter a valid email address';
+            errorDiv.style.display = 'block';
+            this.classList.add('error');
+        } else {
+            errorDiv.textContent = '';
+            errorDiv.style.display = 'none';
+            this.classList.remove('error');
+        }
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.shiftKey && e.key === 'P') {
+            e.preventDefault();
+            const passwordFields = ['regPassword', 'regPasswordConfirm'];
+            passwordFields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field && field.type === 'password') {
+                    togglePassword(fieldId);
+                }
+            });
+        }
+    });
+</script>
+</body>
+</html>
