@@ -1,12 +1,9 @@
 package com.moneytracker.entity;
-
-import jakarta.persistence.*;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
-import java.util.List;
-import java.util.Objects;
-
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 // Person.java
 @Entity
 @Table(name = "persons")

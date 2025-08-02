@@ -31,6 +31,9 @@ public class PersonDTO {
         this.email = email;
         this.fullName = fullName;
     }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
     // Getters and setters
     public String getUsername() { return username; }

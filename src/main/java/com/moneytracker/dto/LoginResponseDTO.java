@@ -15,6 +15,13 @@ public class LoginResponseDTO {
         this.person = person;
     }
 
+    public void setToken(String token) {
+        this.token = token;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
     public boolean isSuccess() {
         return success;
     }

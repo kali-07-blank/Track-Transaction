@@ -35,6 +35,9 @@ public class TransactionDTO {
     }
 
     // Getters and setters
+    public void setId(Long id) {
+        this.id = id;
+    }
     public BigDecimal getAmount() { return amount; }
     public void setAmount(BigDecimal amount) { this.amount = amount; }
 

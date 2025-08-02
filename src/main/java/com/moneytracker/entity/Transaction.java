@@ -1,13 +1,7 @@
 package com.moneytracker.entity;
 
-import com.moneytracker.enums.TransactionType;
-import jakarta.persistence.*;
-import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.Objects;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 // Transaction.java
 @Entity
 @Table(name = "transactions")
