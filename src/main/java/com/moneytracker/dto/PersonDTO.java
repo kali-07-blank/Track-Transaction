@@ -29,6 +29,9 @@ public class PersonDTO {
     @Size(max = 255, message = "Full name must not exceed 255 characters")
     private String fullName;
 
+    @Size(min = 6, message = "Password must be at least 6 characters")
+    private String password;
+
     private String role;
     private LocalDateTime createdDate;
     private LocalDateTime lastModifiedDate;
@@ -55,6 +58,9 @@ public class PersonDTO {
 
     public String getFullName() { return fullName; }
     public void setFullName(String fullName) { this.fullName = fullName; }
+
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
 
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }

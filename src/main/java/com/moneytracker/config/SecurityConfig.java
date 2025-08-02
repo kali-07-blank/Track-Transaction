@@ -37,7 +37,7 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .headers(headers -> headers
-                        .frameOptions().sameOrigin() // For H2 Console
+                        .frameOptions(frameOptions -> frameOptions.sameOrigin()) // For H2 Console
                 );
 
         return http.build();

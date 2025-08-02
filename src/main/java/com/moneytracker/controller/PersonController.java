@@ -4,11 +4,14 @@ import com.moneytracker.dto.PersonDTO;
 import com.moneytracker.service.PersonService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/people")
@@ -30,13 +33,14 @@ public class PersonController {
 
     @GetMapping("/{id}")
     public ResponseEntity<PersonDTO> getPersonById(@PathVariable Long id) {
-        PersonDTO person = personService.getPersonById(id);
-        return ResponseEntity.ok(person);
+        Optional<PersonDTO> person = personService.getPersonById(id);
+        return person.map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping
-    public ResponseEntity<List<PersonDTO>> getAllPersons() {
-        List<PersonDTO> persons = personService.getAllPersons();
+    public ResponseEntity<Page<PersonDTO>> getAllPersons(Pageable pageable) {
+        Page<PersonDTO> persons = personService.getAllPersons(pageable);
         return ResponseEntity.ok(persons);
     }
 
@@ -56,13 +60,15 @@ public class PersonController {
 
     @GetMapping("/username/{username}")
     public ResponseEntity<PersonDTO> getPersonByUsername(@PathVariable String username) {
-        PersonDTO person = personService.findByUsername(username);
-        return ResponseEntity.ok(person);
+        Optional<PersonDTO> person = personService.getPersonByUsername(username);
+        return person.map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/email/{email}")
     public ResponseEntity<PersonDTO> getPersonByEmail(@PathVariable String email) {
-        PersonDTO person = personService.findByEmail(email);
-        return ResponseEntity.ok(person);
+        Optional<PersonDTO> person = personService.getPersonByEmail(email);
+        return person.map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }
