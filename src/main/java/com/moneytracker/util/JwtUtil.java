@@ -190,4 +190,28 @@ public class JwtUtil {
     public Long getRefreshTokenExpiration() {
         return refreshTokenExpiration;
     }
+
+    /**
+     * Set secret key (for testing purposes)
+     */
+    public void setSecret(String secret) {
+        this.secret = secret;
+    }
+
+    /**
+     * Set expiration time (for testing purposes)
+     */
+    public void setExpiration(long expiration) {
+        this.accessTokenExpiration = expiration * 1000; // Convert to milliseconds
+    }
+
+    /**
+     * Generate token for UserDetails (for testing compatibility)
+     */
+    public String generateToken(org.springframework.security.core.userdetails.UserDetails userDetails) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("type", "ACCESS");
+        
+        return createToken(claims, userDetails.getUsername(), accessTokenExpiration);
+    }
 }

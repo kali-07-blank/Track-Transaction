@@ -7,6 +7,7 @@ import com.moneytracker.dto.RegisterRequestDTO;
 import com.moneytracker.entity.Person;
 import com.moneytracker.exception.DuplicateResourceException;
 import com.moneytracker.repository.PersonRepository;
+import com.moneytracker.security.CustomUserDetailsService;
 import com.moneytracker.service.AuthService;
 import com.moneytracker.service.PersonService;
 import com.moneytracker.util.JwtUtil;
@@ -94,7 +95,9 @@ public class AuthServiceImpl implements AuthService {
                     )
             );
 
-            Person person = (Person) authentication.getPrincipal();
+            CustomUserDetailsService.CustomUserPrincipal userPrincipal = 
+                    (CustomUserDetailsService.CustomUserPrincipal) authentication.getPrincipal();
+            Person person = userPrincipal.getPerson();
 
             // Generate JWT tokens
             String accessToken = jwtUtil.generateAccessToken(person);

@@ -1,5 +1,4 @@
 /workspace/src/main/java/com/moneytracker/service/TransactionService.java
-/workspace/src/main/java/com/moneytracker/service/UserDetailsServiceImpl.java
 /workspace/src/main/java/com/moneytracker/repository/PersonRepository.java
 /workspace/src/main/java/com/moneytracker/enums/TransactionType.java
 /workspace/src/main/java/com/moneytracker/exception/DuplicateResourceException.java
@@ -24,6 +23,7 @@
 /workspace/src/main/java/com/moneytracker/dto/ErrorResponse.java
 /workspace/src/main/java/com/moneytracker/service/PersonServiceImpl.java
 /workspace/src/main/java/com/moneytracker/util/JwtUtil.java
+/workspace/src/main/java/com/moneytracker/Security/CustomUserDetailsService.java
 /workspace/src/main/java/com/moneytracker/service/TransactionServiceImpl.java
 /workspace/src/main/java/com/moneytracker/exception/GlobalExceptionHandler.java
 /workspace/src/main/java/com/moneytracker/validator/TransactionValidator.java
