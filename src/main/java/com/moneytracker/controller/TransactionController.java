@@ -33,7 +33,7 @@ import java.util.List;
  * @version 1.0.0
  */
 @RestController
-@RequestMapping("/api/v1/transactions")
+@RequestMapping("/api/transactions")
 @SecurityRequirement(name = "bearerAuth")
 @Tag(name = "Transaction Management", description = "Transaction management APIs")
 public class TransactionController {
