@@ -1,33 +1,22 @@
-package com.moneytracker.service.impl;
+package com.moneytracker.service;
 
 import com.moneytracker.dto.PersonDTO;
 import com.moneytracker.entity.Person;
 import com.moneytracker.exception.DuplicateResourceException;
 import com.moneytracker.exception.ResourceNotFoundException;
 import com.moneytracker.repository.PersonRepository;
-import com.moneytracker.service.PersonService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
-/**
- * Implementation of PersonService
- *
- * @author MoneyTracker Team
- * @version 1.0.0
- */
 @Service
 @Transactional
 public class PersonServiceImpl implements PersonService {
-
-    private static final Logger logger = LoggerFactory.getLogger(PersonServiceImpl.class);
 
     private final PersonRepository personRepository;
     private final PasswordEncoder passwordEncoder;
@@ -40,141 +29,124 @@ public class PersonServiceImpl implements PersonService {
 
     @Override
     public PersonDTO createPerson(PersonDTO personDTO) {
-        logger.info("Creating new person with username: {}", personDTO.getUsername());
-
-        // Check for duplicate username
-        if (personRepository.existsByUsername(personDTO.getUsername())) {
+        // Check if username already exists
+        if (personRepository.findByUsername(personDTO.getUsername()).isPresent()) {
             throw new DuplicateResourceException("Username already exists: " + personDTO.getUsername());
         }
 
-        // Check for duplicate email
-        if (personRepository.existsByEmail(personDTO.getEmail())) {
+        // Check if email already exists
+        if (personRepository.findByEmail(personDTO.getEmail()).isPresent()) {
             throw new DuplicateResourceException("Email already exists: " + personDTO.getEmail());
         }
 
         Person person = convertToEntity(personDTO);
-        Person savedPerson = personRepository.save(person);
+        person.setPassword(passwordEncoder.encode(person.getPassword()));
 
-        logger.info("Successfully created person with ID: {}", savedPerson.getId());
+        Person savedPerson = personRepository.save(person);
         return convertToDTO(savedPerson);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<PersonDTO> getPersonById(Long id) {
-        logger.debug("Fetching person by ID: {}", id);
-        return personRepository.findById(id).map(this::convertToDTO);
+    public PersonDTO getPersonById(Long id) {
+        Person person = personRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Person not found with id: " + id));
+        return convertToDTO(person);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<PersonDTO> getPersonByUsername(String username) {
-        logger.debug("Fetching person by username: {}", username);
-        return personRepository.findByUsername(username).map(this::convertToDTO);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<PersonDTO> getPersonByEmail(String email) {
-        logger.debug("Fetching person by email: {}", email);
-        return personRepository.findByEmail(email).map(this::convertToDTO);
+    public List<PersonDTO> getAllPersons() {
+        return personRepository.findAll().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
     }
 
     @Override
     public PersonDTO updatePerson(Long id, PersonDTO personDTO) {
-        logger.info("Updating person with ID: {}", id);
-
         Person existingPerson = personRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Person not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Person not found with id: " + id));
 
-        // Check for duplicate username (excluding current person)
-        if (!existingPerson.getUsername().equals(personDTO.getUsername()) &&
-                personRepository.existsByUsernameAndIdNot(personDTO.getUsername(), id)) {
-            throw new DuplicateResourceException("Username already exists: " + personDTO.getUsername());
+        // Check if username is being changed and if it already exists
+        if (!existingPerson.getUsername().equals(personDTO.getUsername())) {
+            Optional<Person> personWithUsername = personRepository.findByUsername(personDTO.getUsername());
+            if (personWithUsername.isPresent() && !personWithUsername.get().getId().equals(id)) {
+                throw new DuplicateResourceException("Username already exists: " + personDTO.getUsername());
+            }
         }
 
-        // Check for duplicate email (excluding current person)
-        if (!existingPerson.getEmail().equals(personDTO.getEmail()) &&
-                personRepository.existsByEmailAndIdNot(personDTO.getEmail(), id)) {
-            throw new DuplicateResourceException("Email already exists: " + personDTO.getEmail());
+        // Check if email is being changed and if it already exists
+        if (!existingPerson.getEmail().equals(personDTO.getEmail())) {
+            Optional<Person> personWithEmail = personRepository.findByEmail(personDTO.getEmail());
+            if (personWithEmail.isPresent() && !personWithEmail.get().getId().equals(id)) {
+                throw new DuplicateResourceException("Email already exists: " + personDTO.getEmail());
+            }
         }
 
-        // Update fields
         existingPerson.setUsername(personDTO.getUsername());
         existingPerson.setEmail(personDTO.getEmail());
         existingPerson.setFullName(personDTO.getFullName());
 
-        Person updatedPerson = personRepository.save(existingPerson);
+        // Only update password if it's provided and different
+        if (personDTO.getPassword() != null && !personDTO.getPassword().trim().isEmpty()) {
+            existingPerson.setPassword(passwordEncoder.encode(personDTO.getPassword()));
+        }
 
-        logger.info("Successfully updated person with ID: {}", id);
+        Person updatedPerson = personRepository.save(existingPerson);
         return convertToDTO(updatedPerson);
     }
 
     @Override
     public void deletePerson(Long id) {
-        logger.info("Deleting person with ID: {}", id);
-
         if (!personRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Person not found with ID: " + id);
+            throw new ResourceNotFoundException("Person not found with id: " + id);
         }
-
         personRepository.deleteById(id);
-        logger.info("Successfully deleted person with ID: {}", id);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<PersonDTO> getAllPersons(Pageable pageable) {
-        logger.debug("Fetching all persons with pagination: {}", pageable);
-        return personRepository.findAll(pageable).map(this::convertToDTO);
+    public PersonDTO findByUsername(String username) {
+        Person person = personRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Person not found with username: " + username));
+        return convertToDTO(person);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public boolean existsByUsername(String username) {
-        return personRepository.existsByUsername(username);
+    public PersonDTO findByEmail(String email) {
+        Person person = personRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Person not found with email: " + email));
+        return convertToDTO(person);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public boolean existsByEmail(String email) {
-        return personRepository.existsByEmail(email);
-    }
-
-    @Override
-    public PersonDTO convertToDTO(Person person) {
-        if (person == null) {
-            return null;
+    public Optional<Person> findByUsernameOrEmail(String identifier) {
+        Optional<Person> person = personRepository.findByUsername(identifier);
+        if (person.isEmpty()) {
+            person = personRepository.findByEmail(identifier);
         }
+        return person;
+    }
 
+    private PersonDTO convertToDTO(Person person) {
         PersonDTO dto = new PersonDTO();
         dto.setId(person.getId());
         dto.setUsername(person.getUsername());
         dto.setEmail(person.getEmail());
         dto.setFullName(person.getFullName());
-        dto.setRole(person.getRole().name());
-        dto.setCreatedDate(person.getCreatedDate());
-        dto.setLastModifiedDate(person.getLastModifiedDate());
-
+        // Note: Don't include password in DTO for security
         return dto;
     }
 
-    @Override
-    public Person convertToEntity(PersonDTO personDTO) {
-        if (personDTO == null) {
-            return null;
-        }
-
+    private Person convertToEntity(PersonDTO dto) {
         Person person = new Person();
-        person.setId(personDTO.getId());
-        person.setUsername(personDTO.getUsername());
-        person.setEmail(personDTO.getEmail());
-        person.setFullName(personDTO.getFullName());
-
-        if (personDTO.getRole() != null) {
-            person.setRole(Person.Role.valueOf(personDTO.getRole()));
-        }
-
+        person.setId(dto.getId());
+        person.setUsername(dto.getUsername());
+        person.setEmail(dto.getEmail());
+        person.setFullName(dto.getFullName());
+        person.setPassword(dto.getPassword());
         return person;
     }
 }
