@@ -29,7 +29,7 @@ public class TransactionController {
     @PostMapping
     public ResponseEntity<TransactionDTO> createTransaction(@Valid @RequestBody TransactionDTO transactionDTO) {
         TransactionDTO createdTransaction = transactionService.createTransaction(transactionDTO);
-        return new ResponseEntity<>(createdTransaction, HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdTransaction);
     }
 
     @GetMapping("/{id}")
@@ -82,7 +82,8 @@ public class TransactionController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<TransactionDTO> updateTransaction(@PathVariable Long id, @Valid @RequestBody TransactionDTO transactionDTO) {
+    public ResponseEntity<TransactionDTO> updateTransaction(@PathVariable Long id,
+                                                            @Valid @RequestBody TransactionDTO transactionDTO) {
         TransactionDTO updatedTransaction = transactionService.updateTransaction(id, transactionDTO);
         return ResponseEntity.ok(updatedTransaction);
     }

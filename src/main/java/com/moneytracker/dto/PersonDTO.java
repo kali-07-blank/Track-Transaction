@@ -1,14 +1,12 @@
-// PersonDTO.java
 package com.moneytracker.dto;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 
-// PersonDTO.java
 public class PersonDTO {
+
     @NotBlank(message = "Username is required")
     @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
+    @Pattern(regexp = "^[a-zA-Z0-9_]+$", message = "Username can only contain letters, numbers, and underscores")
     private String username;
 
     @NotBlank(message = "Email is required")
@@ -25,10 +23,16 @@ public class PersonDTO {
     @Size(max = 255, message = "Full name cannot exceed 255 characters")
     private String fullName;
 
-    // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    // Constructors, getters, and setters
+    public PersonDTO() {}
 
+    public PersonDTO(String username, String email, String fullName) {
+        this.username = username;
+        this.email = email;
+        this.fullName = fullName;
+    }
+
+    // Getters and setters
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
 

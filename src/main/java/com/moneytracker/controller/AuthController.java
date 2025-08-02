@@ -1,13 +1,16 @@
-// AuthController.java - Enhanced Authentication Controller
 package com.moneytracker.controller;
 
 import com.moneytracker.dto.LoginRequestDTO;
 import com.moneytracker.dto.LoginResponseDTO;
 import com.moneytracker.dto.PersonDTO;
 import com.moneytracker.service.AuthService;
-import jakarta.validation.Valid;
+import com.moneytracker.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -15,22 +18,39 @@ import org.springframework.web.bind.annotation.*;
 @CrossOrigin(origins = "*")
 public class AuthController {
 
-    private final AuthService authService;
+    @Autowired
+    private AuthService authService;
 
     @Autowired
-    public AuthController(AuthService authService) {
-        this.authService = authService;
-    }
+    private AuthenticationManager authenticationManager;
 
-    @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> login(@Valid @RequestBody LoginRequestDTO loginRequest) {
-        LoginResponseDTO response = authService.authenticate(loginRequest);
-        return ResponseEntity.ok(response);
-    }
+    @Autowired
+    private UserDetailsService userDetailsService;
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
     @PostMapping("/register")
     public ResponseEntity<PersonDTO> register(@Valid @RequestBody PersonDTO personDTO) {
         PersonDTO registeredPerson = authService.register(personDTO);
         return ResponseEntity.ok(registeredPerson);
     }
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponseDTO> login(@Valid @RequestBody LoginRequestDTO loginRequest) {
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        loginRequest.getIdentifier(),
+                        loginRequest.getPassword())
+        );
+
+        UserDetails userDetails = userDetailsService.loadUserByUsername(loginRequest.getIdentifier());
+        String token = jwtUtil.generateToken(userDetails);
+
+        LoginResponseDTO response = new LoginResponseDTO();
+        response.setToken(token);
+        response.setUsername(userDetails.getUsername());
+
+        return ResponseEntity.ok(response);
+    }
+
 }

@@ -62,6 +62,8 @@ public class PersonController {
         return ResponseEntity.ok(person);
     }
 
+
+
     @GetMapping("/username/{username}")
     public ResponseEntity<PersonDTO> getPersonByUsername(@PathVariable String username) {
         PersonDTO person = personService.getPersonByUsername(username);
@@ -75,7 +77,8 @@ public class PersonController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<PersonDTO> updatePerson(@PathVariable Long id, @Valid @RequestBody PersonDTO personDTO) {
+    public ResponseEntity<PersonDTO> updatePerson(@PathVariable Long id,
+                                                  @Valid @RequestBody PersonDTO personDTO) {
         PersonDTO updatedPerson = personService.updatePerson(id, personDTO);
         return ResponseEntity.ok(updatedPerson);
     }
