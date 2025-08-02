@@ -1,14 +1,28 @@
+// TransactionSummaryDTO.java
 package com.moneytracker.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.math.BigDecimal;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class TransactionSummary {
-    private Double totalSent;
-    private Double totalReceived;
-    private Double netBalance;
+public class TransactionSummaryDTO {
+    private BigDecimal totalIncome;
+    private BigDecimal totalExpenses;
+    private BigDecimal balance;
+
+    public TransactionSummaryDTO() {}
+
+    public TransactionSummaryDTO(BigDecimal totalIncome, BigDecimal totalExpenses, BigDecimal balance) {
+        this.totalIncome = totalIncome;
+        this.totalExpenses = totalExpenses;
+        this.balance = balance;
+    }
+
+    // Getters and Setters
+    public BigDecimal getTotalIncome() { return totalIncome; }
+    public void setTotalIncome(BigDecimal totalIncome) { this.totalIncome = totalIncome; }
+
+    public BigDecimal getTotalExpenses() { return totalExpenses; }
+    public void setTotalExpenses(BigDecimal totalExpenses) { this.totalExpenses = totalExpenses; }
+
+    public BigDecimal getBalance() { return balance; }
+    public void setBalance(BigDecimal balance) { this.balance = balance; }
 }

@@ -1,89 +1,89 @@
-package com.moneytracker.controller;
+/ PersonController.java
+        package com.moneytracker.controller;
 
+import com.moneytracker.dto.LoginRequestDTO;
+import com.moneytracker.dto.LoginResponseDTO;
 import com.moneytracker.dto.PersonDTO;
-import com.moneytracker.service.JwtService;
 import com.moneytracker.service.PersonService;
-import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
-@RequestMapping("/api/people")
-@RequiredArgsConstructor
+@RequestMapping("/api/persons")
+@CrossOrigin(origins = "*")
 public class PersonController {
 
     private final PersonService personService;
-    private final JwtService jwtService;
 
-    @GetMapping("/all")
-    public ResponseEntity<List<PersonDTO>> getAllPeople(
-            @RequestHeader("Authorization") String authHeader) {
-        Long userId = extractUserId(authHeader);
-        return ResponseEntity.ok(personService.getAllPeople(userId));
+    @Autowired
+    public PersonController(PersonService personService) {
+        this.personService = personService;
     }
 
-    @PostMapping("/add")
-    public ResponseEntity<?> addPerson(
-            @RequestHeader("Authorization") String authHeader,
-            @RequestParam(name = "name", required = false) String name) {
-        Long userId = extractUserId(authHeader);
-        if (name == null || name.trim().isEmpty()) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("error", "Name parameter is required"));
-        }
-        personService.addPerson(userId, name.trim());
-        return ResponseEntity.ok(Map.of("message", "Person '" + name + "' added successfully!"));
+    @PostMapping("/register")
+    public ResponseEntity<PersonDTO> registerPerson(@Valid @RequestBody PersonDTO personDTO) {
+        PersonDTO createdPerson = personService.createPerson(personDTO);
+        return new ResponseEntity<>(createdPerson, HttpStatus.CREATED);
     }
 
-    @DeleteMapping("/{name}")
-    public ResponseEntity<?> deletePerson(
-            @RequestHeader("Authorization") String authHeader,
-            @PathVariable String name) {
-        Long userId = extractUserId(authHeader);
-        if (name == null || name.trim().isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Name is required"));
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponseDTO> loginPerson(@Valid @RequestBody LoginRequestDTO loginRequest) {
+        boolean isAuthenticated = personService.authenticatePerson(
+                loginRequest.getIdentifier(),
+                loginRequest.getPassword()
+        );
+
+        if (isAuthenticated) {
+            PersonDTO person = personService.getPersonByUsername(loginRequest.getIdentifier());
+            if (person == null) {
+                // Try by email if username lookup failed
+                try {
+                    person = personService.getPersonByUsername(loginRequest.getIdentifier());
+                } catch (Exception e) {
+                    // Handle case where identifier might be email
+                }
+            }
+
+            LoginResponseDTO response = new LoginResponseDTO(true, "Login successful", person);
+            return ResponseEntity.ok(response);
+        } else {
+            LoginResponseDTO response = new LoginResponseDTO(false, "Invalid credentials", null);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
-        personService.deletePerson(userId, name.trim());
-        return ResponseEntity.ok(Map.of("message", "Person '" + name + "' deleted successfully!"));
     }
 
-    @PostMapping("/send")
-    public ResponseEntity<?> sendMoney(
-            @RequestHeader("Authorization") String authHeader,
-            @RequestParam(name = "name", required = false) String name,
-            @RequestParam(name = "amount", required = false) Double amount,
-            @RequestParam(required = false) String description) {
-        Long userId = extractUserId(authHeader);
-        if (name == null || name.trim().isEmpty() || amount == null || amount <= 0) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("error", "Valid name and amount are required"));
-        }
-        personService.sendMoney(userId, name.trim(), amount, description);
-        return ResponseEntity.ok(Map.of("message", "Money sent successfully!"));
+    @GetMapping("/{id}")
+    public ResponseEntity<PersonDTO> getPersonById(@PathVariable Long id) {
+        PersonDTO person = personService.getPersonById(id);
+        return ResponseEntity.ok(person);
     }
 
-    @PostMapping("/receive")
-    public ResponseEntity<?> receiveMoney(
-            @RequestHeader("Authorization") String authHeader,
-            @RequestParam(name = "name", required = false) String name,
-            @RequestParam(name = "amount", required = false) Double amount,
-            @RequestParam(required = false) String description) {
-        Long userId = extractUserId(authHeader);
-        if (name == null || name.trim().isEmpty() || amount == null || amount <= 0) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("error", "Valid name and amount are required"));
-        }
-        personService.receiveMoney(userId, name.trim(), amount, description);
-        return ResponseEntity.ok(Map.of("message", "Money received successfully!"));
+    @GetMapping("/username/{username}")
+    public ResponseEntity<PersonDTO> getPersonByUsername(@PathVariable String username) {
+        PersonDTO person = personService.getPersonByUsername(username);
+        return ResponseEntity.ok(person);
     }
 
-    private Long extractUserId(String authHeader) {
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new RuntimeException("Invalid authorization header");
-        }
-        return jwtService.getUserIdFromToken(authHeader.substring(7));
+    @GetMapping
+    public ResponseEntity<List<PersonDTO>> getAllPersons() {
+        List<PersonDTO> persons = personService.getAllPersons();
+        return ResponseEntity.ok(persons);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<PersonDTO> updatePerson(@PathVariable Long id, @Valid @RequestBody PersonDTO personDTO) {
+        PersonDTO updatedPerson = personService.updatePerson(id, personDTO);
+        return ResponseEntity.ok(updatedPerson);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deletePerson(@PathVariable Long id) {
+        personService.deletePerson(id);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -2,124 +2,157 @@ package com.moneytracker.service;
 
 import com.moneytracker.dto.PersonDTO;
 import com.moneytracker.entity.Person;
-import com.moneytracker.entity.Transaction;
-import com.moneytracker.entity.User;
-import com.moneytracker.enums.TransactionType;
 import com.moneytracker.exception.DuplicateResourceException;
 import com.moneytracker.exception.ResourceNotFoundException;
 import com.moneytracker.repository.PersonRepository;
-import com.moneytracker.repository.TransactionRepository;
-import com.moneytracker.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
+public interface PersonService {
+    PersonDTO createPerson(PersonDTO personDTO);
+    PersonDTO getPersonById(Long id);
+    PersonDTO getPersonByUsername(String username);
+    List<PersonDTO> getAllPersons();
+    PersonDTO updatePerson(Long id, PersonDTO personDTO);
+    void deletePerson(Long id);
+    boolean authenticatePerson(String identifier, String password);
+}
+
 @Service
 @Transactional
-public class PersonService {
+public class PersonServiceImpl implements PersonService {
+
+    private final PersonRepository personRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    private PersonRepository personRepository;
+    public PersonServiceImpl(PersonRepository personRepository, PasswordEncoder passwordEncoder) {
+        this.personRepository = personRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
 
-    @Autowired
-    private UserRepository userRepository;
+    @Override
+    public PersonDTO createPerson(PersonDTO personDTO) {
+        validatePersonData(personDTO);
 
-    @Autowired
-    private TransactionRepository transactionRepository;
+        if (personRepository.existsByUsername(personDTO.getUsername())) {
+            throw new DuplicateResourceException("Username already exists: " + personDTO.getUsername());
+        }
 
-    public List<PersonDTO> getAllPeople(Long userId) {
-        return personRepository.findByUserIdOrderByNameAsc(userId)
-                .stream()
+        if (personRepository.existsByEmail(personDTO.getEmail())) {
+            throw new DuplicateResourceException("Email already exists: " + personDTO.getEmail());
+        }
+
+        Person person = new Person();
+        person.setUsername(personDTO.getUsername());
+        person.setEmail(personDTO.getEmail());
+        person.setPassword(passwordEncoder.encode(personDTO.getPassword()));
+        person.setFullName(personDTO.getFullName());
+
+        Person savedPerson = personRepository.save(person);
+        return convertToDTO(savedPerson);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PersonDTO getPersonById(Long id) {
+        Person person = personRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Person not found with id: " + id));
+        return convertToDTO(person);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PersonDTO getPersonByUsername(String username) {
+        Person person = personRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Person not found with username: " + username));
+        return convertToDTO(person);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PersonDTO> getAllPersons() {
+        return personRepository.findAll().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
-    public PersonDTO addPerson(Long userId, String name) {
-        if (personRepository.findByUserIdAndName(userId, name).isPresent()) {
-            throw new DuplicateResourceException("Person with name '" + name + "' already exists");
+    @Override
+    public PersonDTO updatePerson(Long id, PersonDTO personDTO) {
+        Person existingPerson = personRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Person not found with id: " + id));
+
+        // Check if username is being changed and if it's already taken
+        if (!existingPerson.getUsername().equals(personDTO.getUsername()) &&
+                personRepository.existsByUsername(personDTO.getUsername())) {
+            throw new DuplicateResourceException("Username already exists: " + personDTO.getUsername());
         }
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-        Person person = new Person();
-        person.setName(name);
-        person.setBalance(0.0);
-        person.setUser(user);
-
-        return convertToDTO(personRepository.save(person));
-    }
-
-    public void deletePerson(Long userId, String name) {
-        Person person = personRepository.findByUserIdAndName(userId, name)
-                .orElseThrow(() -> new ResourceNotFoundException("Person not found: " + name));
-        personRepository.delete(person);
-    }
-
-    public PersonDTO sendMoney(Long userId, String personName, Double amount, String description) {
-        if (amount == null || amount <= 0) {
-            throw new IllegalArgumentException("Amount must be greater than 0");
+        // Check if email is being changed and if it's already taken
+        if (!existingPerson.getEmail().equals(personDTO.getEmail()) &&
+                personRepository.existsByEmail(personDTO.getEmail())) {
+            throw new DuplicateResourceException("Email already exists: " + personDTO.getEmail());
         }
 
-        Person person = personRepository.findByUserIdAndName(userId, personName)
-                .orElseThrow(() -> new ResourceNotFoundException("Person not found: " + personName));
+        existingPerson.setUsername(personDTO.getUsername());
+        existingPerson.setEmail(personDTO.getEmail());
+        existingPerson.setFullName(personDTO.getFullName());
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-        // Subtract from balance
-        person.subtractFromBalance(amount);
-
-        // Create transaction
-        Transaction transaction = new Transaction();
-        transaction.setType(TransactionType.SEND);
-        transaction.setAmount(amount);
-        transaction.setDescription(description != null ? description : "");
-        transaction.setUser(user);
-        transaction.setPerson(person);
-
-        personRepository.save(person);
-        transactionRepository.save(transaction);
-
-        return convertToDTO(person);
-    }
-
-    public PersonDTO receiveMoney(Long userId, String personName, Double amount, String description) {
-        if (amount == null || amount <= 0) {
-            throw new IllegalArgumentException("Amount must be greater than 0");
+        if (personDTO.getPassword() != null && !personDTO.getPassword().isEmpty()) {
+            existingPerson.setPassword(passwordEncoder.encode(personDTO.getPassword()));
         }
 
-        Person person = personRepository.findByUserIdAndName(userId, personName)
-                .orElseThrow(() -> new ResourceNotFoundException("Person not found: " + personName));
+        Person updatedPerson = personRepository.save(existingPerson);
+        return convertToDTO(updatedPerson);
+    }
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    @Override
+    public void deletePerson(Long id) {
+        if (!personRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Person not found with id: " + id);
+        }
+        personRepository.deleteById(id);
+    }
 
-        // Add to balance
-        person.addToBalance(amount);
+    @Override
+    @Transactional(readOnly = true)
+    public boolean authenticatePerson(String identifier, String password) {
+        Person person = personRepository.findByUsernameOrEmail(identifier)
+                .orElse(null);
 
-        // Create transaction
-        Transaction transaction = new Transaction();
-        transaction.setType(TransactionType.RECEIVE);
-        transaction.setAmount(amount);
-        transaction.setDescription(description != null ? description : "");
-        transaction.setUser(user);
-        transaction.setPerson(person);
+        if (person == null) {
+            return false;
+        }
 
-        personRepository.save(person);
-        transactionRepository.save(transaction);
+        return passwordEncoder.matches(password, person.getPassword());
+    }
 
-        return convertToDTO(person);
+    private void validatePersonData(PersonDTO personDTO) {
+        if (personDTO.getUsername() == null || personDTO.getUsername().trim().isEmpty()) {
+            throw new IllegalArgumentException("Username is required");
+        }
+        if (personDTO.getEmail() == null || personDTO.getEmail().trim().isEmpty()) {
+            throw new IllegalArgumentException("Email is required");
+        }
+        if (personDTO.getPassword() == null || personDTO.getPassword().length() < 6) {
+            throw new IllegalArgumentException("Password must be at least 6 characters");
+        }
+        if (personDTO.getFullName() == null || personDTO.getFullName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Full name is required");
+        }
     }
 
     private PersonDTO convertToDTO(Person person) {
-        return new PersonDTO(
-                person.getId(),
-                person.getName(),
-                person.getBalance(),
-                person.getCreatedAt()
-        );
+        PersonDTO dto = new PersonDTO();
+        dto.setId(person.getId());
+        dto.setUsername(person.getUsername());
+        dto.setEmail(person.getEmail());
+        dto.setFullName(person.getFullName());
+        return dto;
     }
 }

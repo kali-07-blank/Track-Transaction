@@ -1,50 +1,55 @@
-package com.moneytracker.service;
+/ AuthService.java - Authentication Service
+        package com.moneytracker.service;
 
-import com.moneytracker.dto.LoginRequest;
-import com.moneytracker.dto.LoginResponse;
-import com.moneytracker.entity.User;
-import com.moneytracker.exception.DuplicateResourceException;
-import com.moneytracker.exception.ResourceNotFoundException;
-import com.moneytracker.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import com.moneytracker.dto.LoginRequestDTO;
+import com.moneytracker.dto.LoginResponseDTO;
+import com.moneytracker.dto.PersonDTO;
+import com.moneytracker.entity.Person;
+import com.moneytracker.repository.PersonRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
-@RequiredArgsConstructor
 public class AuthService {
 
-    private final UserRepository userRepository;
-    private final JwtService jwtService;
-    private final BCryptPasswordEncoder passwordEncoder;
+    private final PersonRepository personRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final PersonService personService;
 
-    /**
-     * Login user and return JWT token
-     */
-    public LoginResponse login(LoginRequest request) {
-        User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new ResourceNotFoundException("Invalid username or password"));
-
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new ResourceNotFoundException("Invalid username or password");
-        }
-
-        String token = jwtService.generateToken(user.getId(), user.getUsername());
-
-        return new LoginResponse(token, user.getUsername(), "Login successful");
+    @Autowired
+    public AuthService(PersonRepository personRepository, PasswordEncoder passwordEncoder, PersonService personService) {
+        this.personRepository = personRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.personService = personService;
     }
 
-    /**
-     * Register a new user with hashed password
-     */
-    public User registerUser(String username, String password) {
-        if (userRepository.existsByUsername(username)) {
-            throw new DuplicateResourceException("Username already exists");
+    public LoginResponseDTO authenticate(LoginRequestDTO loginRequest) {
+        Optional<Person> personOpt = personRepository.findByUsernameOrEmail(loginRequest.getIdentifier());
+
+        if (personOpt.isPresent()) {
+            Person person = personOpt.get();
+            if (passwordEncoder.matches(loginRequest.getPassword(), person.getPassword())) {
+                PersonDTO personDTO = convertToDTO(person);
+                return new LoginResponseDTO(true, "Login successful", personDTO);
+            }
         }
 
-        User user = new User();
-        user.setUsername(username);
-        user.setPassword(passwordEncoder.encode(password)); // ✅ Secure password
-        return userRepository.save(user);
+        return new LoginResponseDTO(false, "Invalid credentials", null);
+    }
+
+    public PersonDTO register(PersonDTO personDTO) {
+        return personService.createPerson(personDTO);
+    }
+
+    private PersonDTO convertToDTO(Person person) {
+        PersonDTO dto = new PersonDTO();
+        dto.setId(person.getId());
+        dto.setUsername(person.getUsername());
+        dto.setEmail(person.getEmail());
+        dto.setFullName(person.getFullName());
+        return dto;
     }
 }

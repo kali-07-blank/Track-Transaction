@@ -1,92 +1,96 @@
-package com.moneytracker.controller;
+/ TransactionController.java
+        package com.moneytracker.controller;
 
 import com.moneytracker.dto.TransactionDTO;
-import com.moneytracker.dto.TransactionSummary;
-import com.moneytracker.service.JwtService;
+import com.moneytracker.dto.TransactionSummaryDTO;
+import com.moneytracker.enums.TransactionType;
 import com.moneytracker.service.TransactionService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/transactions")
 @CrossOrigin(origins = "*")
 public class TransactionController {
 
-    @Autowired
-    private TransactionService transactionService;
+    private final TransactionService transactionService;
 
     @Autowired
-    private JwtService jwtService;
-
-    // ===== Get All Transactions =====
-    @GetMapping("/all")
-    public ResponseEntity<List<TransactionDTO>> getAllTransactions(@RequestHeader("Authorization") String authHeader) {
-        Long userId = extractUserId(authHeader);
-        return ResponseEntity.ok(transactionService.getAllTransactions(userId));
+    public TransactionController(TransactionService transactionService) {
+        this.transactionService = transactionService;
     }
 
-    // ===== Get Summary =====
-    @GetMapping("/summary")
-    public ResponseEntity<TransactionSummary> getTransactionSummary(@RequestHeader("Authorization") String authHeader) {
-        Long userId = extractUserId(authHeader);
-        return ResponseEntity.ok(transactionService.getTransactionSummary(userId));
+    @PostMapping
+    public ResponseEntity<TransactionDTO> createTransaction(@Valid @RequestBody TransactionDTO transactionDTO) {
+        TransactionDTO createdTransaction = transactionService.createTransaction(transactionDTO);
+        return new ResponseEntity<>(createdTransaction, HttpStatus.CREATED);
     }
 
-    // ===== Get Transactions By Person =====
-    @GetMapping("/person/{personName}")
-    public ResponseEntity<List<TransactionDTO>> getTransactionsByPerson(
-            @RequestHeader("Authorization") String authHeader,
-            @PathVariable String personName) {
-        Long userId = extractUserId(authHeader);
-        return ResponseEntity.ok(transactionService.getTransactionsByPerson(userId, personName));
+    @GetMapping("/{id}")
+    public ResponseEntity<TransactionDTO> getTransactionById(@PathVariable Long id) {
+        TransactionDTO transaction = transactionService.getTransactionById(id);
+        return ResponseEntity.ok(transaction);
     }
 
-    // ===== Reverse Transaction (POST for compatibility with frontend) =====
-    @PostMapping("/reverse/{transactionId}")
-    public ResponseEntity<Map<String, Object>> reverseTransaction(
-            @RequestHeader("Authorization") String authHeader,
-            @PathVariable Long transactionId) {
-
-        Long userId;
-        try {
-            userId = extractUserId(authHeader);
-        } catch (Exception e) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("message", "❌ Unauthorized: Invalid or missing token.");
-            return ResponseEntity.status(401).body(errorResponse);
-        }
-
-        try {
-            transactionService.reverseTransaction(userId, transactionId);
-
-            // ✅ Fetch updated data after reversal
-            List<TransactionDTO> updatedTransactions = transactionService.getAllTransactions(userId);
-            TransactionSummary updatedSummary = transactionService.getTransactionSummary(userId);
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("message", "✅ Transaction reversed successfully!");
-            response.put("transactions", updatedTransactions);
-            response.put("summary", updatedSummary);
-
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("message", "❌ Failed to reverse transaction: " + e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse);
-        }
+    @GetMapping("/person/{personId}")
+    public ResponseEntity<List<TransactionDTO>> getTransactionsByPersonId(@PathVariable Long personId) {
+        List<TransactionDTO> transactions = transactionService.getTransactionsByPersonId(personId);
+        return ResponseEntity.ok(transactions);
     }
 
-    // ===== Utility Method =====
-    private Long extractUserId(String authHeader) {
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new RuntimeException("Invalid authorization header");
-        }
-        return jwtService.getUserIdFromToken(authHeader.substring(7));
+    @GetMapping("/person/{personId}/type/{type}")
+    public ResponseEntity<List<TransactionDTO>> getTransactionsByPersonIdAndType(
+            @PathVariable Long personId,
+            @PathVariable TransactionType type) {
+        List<TransactionDTO> transactions = transactionService.getTransactionsByPersonIdAndType(personId, type);
+        return ResponseEntity.ok(transactions);
+    }
+
+    @GetMapping("/person/{personId}/category/{category}")
+    public ResponseEntity<List<TransactionDTO>> getTransactionsByPersonIdAndCategory(
+            @PathVariable Long personId,
+            @PathVariable String category) {
+        List<TransactionDTO> transactions = transactionService.getTransactionsByPersonIdAndCategory(personId, category);
+        return ResponseEntity.ok(transactions);
+    }
+
+    @GetMapping("/person/{personId}/date-range")
+    public ResponseEntity<List<TransactionDTO>> getTransactionsByDateRange(
+            @PathVariable Long personId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
+        List<TransactionDTO> transactions = transactionService.getTransactionsByDateRange(personId, startDate, endDate);
+        return ResponseEntity.ok(transactions);
+    }
+
+    @GetMapping("/person/{personId}/summary")
+    public ResponseEntity<TransactionSummaryDTO> getTransactionSummary(@PathVariable Long personId) {
+        TransactionSummaryDTO summary = transactionService.getTransactionSummary(personId);
+        return ResponseEntity.ok(summary);
+    }
+
+    @GetMapping("/person/{personId}/categories")
+    public ResponseEntity<List<String>> getCategoriesByPersonId(@PathVariable Long personId) {
+        List<String> categories = transactionService.getCategoriesByPersonId(personId);
+        return ResponseEntity.ok(categories);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<TransactionDTO> updateTransaction(@PathVariable Long id, @Valid @RequestBody TransactionDTO transactionDTO) {
+        TransactionDTO updatedTransaction = transactionService.updateTransaction(id, transactionDTO);
+        return ResponseEntity.ok(updatedTransaction);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteTransaction(@PathVariable Long id) {
+        transactionService.deleteTransaction(id);
+        return ResponseEntity.noContent().build();
     }
 }
