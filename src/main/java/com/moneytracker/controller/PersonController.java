@@ -1,5 +1,4 @@
-/ PersonController.java
-        package com.moneytracker.controller;
+package com.moneytracker.controller;
 
 import com.moneytracker.dto.LoginRequestDTO;
 import com.moneytracker.dto.LoginResponseDTO;
