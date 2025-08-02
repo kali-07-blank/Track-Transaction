@@ -5,7 +5,6 @@ import com.moneytracker.dto.LoginResponseDTO;
 import com.moneytracker.dto.PersonDTO;
 import com.moneytracker.dto.RegisterRequestDTO;
 import com.moneytracker.entity.Person;
-import com.moneytracker.exception.AuthenticationException;
 import com.moneytracker.exception.DuplicateResourceException;
 import com.moneytracker.repository.PersonRepository;
 import com.moneytracker.service.AuthService;
@@ -17,8 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-//import org.springframework.security.core.AuthenticationException as SpringAuthException;
-import org.springframework.security.core.AuthenticationException;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -114,9 +111,9 @@ public class AuthServiceImpl implements AuthService {
                     personDTO
             );
 
-        } catch (SpringAuthException e) {
+        } catch (org.springframework.security.core.AuthenticationException e) {
             logger.warn("Authentication failed for identifier: {}", loginRequest.getIdentifier());
-            throw new AuthenticationException("Invalid credentials");
+            throw new com.moneytracker.exception.AuthenticationException("Invalid credentials");
         }
     }
 
@@ -126,12 +123,12 @@ public class AuthServiceImpl implements AuthService {
 
         try {
             if (!jwtUtil.isTokenValid(refreshToken)) {
-                throw new AuthenticationException("Invalid refresh token");
+                throw new com.moneytracker.exception.AuthenticationException("Invalid refresh token");
             }
 
             String username = jwtUtil.extractUsername(refreshToken);
             Person person = personRepository.findByUsernameOrEmail(username)
-                    .orElseThrow(() -> new AuthenticationException("User not found"));
+                    .orElseThrow(() -> new com.moneytracker.exception.AuthenticationException("User not found"));
 
             String newAccessToken = jwtUtil.generateAccessToken(person);
             String newRefreshToken = jwtUtil.generateRefreshToken(person);
@@ -149,7 +146,7 @@ public class AuthServiceImpl implements AuthService {
 
         } catch (Exception e) {
             logger.warn("Token refresh failed: {}", e.getMessage());
-            throw new AuthenticationException("Token refresh failed");
+            throw new com.moneytracker.exception.AuthenticationException("Token refresh failed");
         }
     }
 
