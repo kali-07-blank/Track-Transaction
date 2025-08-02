@@ -91,4 +91,12 @@ public interface PersonService {
      * @return person entity
      */
     Person convertToEntity(PersonDTO personDTO);
+
+    /**
+     * Authenticate person with username/email and password
+     * @param usernameOrEmail username or email
+     * @param password password
+     * @return true if authentication successful
+     */
+    boolean authenticatePerson(String usernameOrEmail, String password);
 }

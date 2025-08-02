@@ -3,6 +3,7 @@ com/moneytracker/dto/TransactionDTO.class
 com/moneytracker/entity/Person.class
 com/moneytracker/util/DateRangeUtil.class
 com/moneytracker/exception/GlobalExceptionHandler.class
+com/moneytracker/security/CustomUserDetailsService$CustomUserPrincipal.class
 com/moneytracker/config/CorsConfig.class
 com/moneytracker/exception/DuplicateResourceException.class
 com/moneytracker/dto/ValidationErrorResponse.class
@@ -31,7 +32,6 @@ com/moneytracker/entity/Transaction.class
 com/moneytracker/exception/GlobalExceptionHandler$ValidationErrorResponse.class
 com/moneytracker/service/PersonServiceImpl.class
 com/moneytracker/exception/AuthenticationException.class
-com/moneytracker/service/UserDetailsServiceImpl.class
 com/moneytracker/dto/ErrorResponse.class
 com/moneytracker/exception/ResourceNotFoundException.class
 com/moneytracker/repository/PersonRepository.class
@@ -42,6 +42,7 @@ com/moneytracker/dto/PagedResponse.class
 com/moneytracker/service/AuthService.class
 com/moneytracker/service/impl/AuthServiceImpl.class
 com/moneytracker/dto/TransactionSummaryDTO.class
+com/moneytracker/security/CustomUserDetailsService.class
 com/moneytracker/validator/TransactionValidator.class
 com/moneytracker/service/TransactionService.class
 com/moneytracker/service/TransactionReportService.class

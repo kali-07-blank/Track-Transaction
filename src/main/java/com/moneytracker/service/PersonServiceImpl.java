@@ -152,4 +152,15 @@ public class PersonServiceImpl implements PersonService {
         person.setPassword(dto.getPassword());
         return person;
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean authenticatePerson(String usernameOrEmail, String password) {
+        Optional<Person> personOpt = personRepository.findByUsernameOrEmail(usernameOrEmail);
+        if (personOpt.isPresent()) {
+            Person person = personOpt.get();
+            return passwordEncoder.matches(password, person.getPassword());
+        }
+        return false;
+    }
 }
